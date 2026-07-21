@@ -1,0 +1,69 @@
+{
+    "id": "{C273C85E-37AD-47E4-B27D-FA514BA0CFE4}",
+    "name": "BasementClimate",
+    "type": 3,
+    "vendor": "SmartClimate",
+    "aliases": [
+        "Basement Climate"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "BC",
+    "url": "https://github.com/pinkerunicorn/",
+    "author": "Florian Graßinger",
+    "properties": {
+        "SensorTempOutside": {
+            "type": "integer",
+            "default": 0
+        },
+        "SensorHumOutside": {
+            "type": "integer",
+            "default": 0
+        },
+        "SensorTempInside": {
+            "type": "integer",
+            "default": 0
+        },
+        "SensorHumInside": {
+            "type": "integer",
+            "default": 0
+        },
+        "SensorWindows": {
+            "type": "string",
+            "default": "[]"
+        },
+        "ActuatorDehumidifierPlug": {
+            "type": "integer",
+            "default": 0
+        },
+        "SensorDehumidifierPower": {
+            "type": "integer",
+            "default": 0
+        },
+        "ActuatorRadiator1": {
+            "type": "integer",
+            "default": 0
+        },
+        "ActuatorRadiator2": {
+            "type": "integer",
+            "default": 0
+        },
+        "DehumidifierPowerThreshold": {
+            "type": "float",
+            "default": 10
+        },
+        "DehumidifierPowerTime": {
+            "type": "integer",
+            "default": 60
+        },
+        "TargetTemperature": {
+            "type": "float",
+            "default": 18
+        },
+        "VentilationThreshold": {
+            "type": "float",
+            "default": 0.5
+        }
+    }
+}

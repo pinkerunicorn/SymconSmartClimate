@@ -1,0 +1,57 @@
+{
+    "id": "{72F85A11-E649-43C1-B753-159D7133CBAF}",
+    "name": "GardenHouseClimate",
+    "type": 3,
+    "vendor": "SmartClimate",
+    "aliases": [
+        "Garden House Climate"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "GHC",
+    "url": "https://github.com/pinkerunicorn/",
+    "author": "Florian Graßinger",
+    "properties": {
+        "SensorTempInside": {
+            "type": "integer",
+            "default": 0
+        },
+        "SensorTempOutside": {
+            "type": "integer",
+            "default": 0
+        },
+        "SensorWindows": {
+            "type": "string",
+            "default": "[]"
+        },
+        "ActuatorHeaterPlug": {
+            "type": "integer",
+            "default": 0
+        },
+        "SensorHeaterPower": {
+            "type": "integer",
+            "default": 0
+        },
+        "Hysteresis": {
+            "type": "float",
+            "default": 0.5
+        },
+        "HeaterPowerThreshold": {
+            "type": "float",
+            "default": 50
+        },
+        "HeaterDefectTime": {
+            "type": "integer",
+            "default": 300
+        },
+        "WindowOpenTime": {
+            "type": "integer",
+            "default": 900
+        },
+        "FrostWarningTemp": {
+            "type": "float",
+            "default": 3
+        }
+    }
+}

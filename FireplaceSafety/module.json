@@ -1,0 +1,58 @@
+{
+    "id": "{A1B2C3D4-E5F6-4789-A123-456789ABCDEF}",
+    "name": "FireplaceSafety",
+    "type": 3,
+    "vendor": "SmartClimate",
+    "aliases": [
+        "Fireplace Safety",
+        "Kamin Sicherheit"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "FS",
+    "author": "Florian Graßinger",
+    "url": "https://github.com/pinkerunicorn/",
+    "properties": {
+        "SensorOvenTemp": {
+            "type": "integer",
+            "default": 0
+        },
+        "SensorRoomTemp": {
+            "type": "integer",
+            "default": 0
+        },
+        "SensorOvenDoor": {
+            "type": "integer",
+            "default": 0
+        },
+        "OvenDoorClosedValue": {
+            "type": "string",
+            "default": "false"
+        },
+        "SensorWindows": {
+            "type": "string",
+            "default": "[]"
+        },
+        "ActuatorHood": {
+            "type": "integer",
+            "default": 0
+        },
+        "OvenDeltaTemp": {
+            "type": "float",
+            "default": 15.0
+        },
+        "PeakDropThreshold": {
+            "type": "float",
+            "default": 5.0
+        },
+        "MaxRoomTemp": {
+            "type": "float",
+            "default": 24.0
+        },
+        "DoorAlarmTime": {
+            "type": "integer",
+            "default": 300
+        }
+    }
+}

@@ -34,12 +34,7 @@ class BasementClimate extends IPSModuleStrict
         $this->RegisterPropertyFloat("VentilationCloseMargin", 0.3);
         
         // Variables
-        if (!IPS_VariableProfileExists('SmartClimate.VentilationRecommendation')) {
-            IPS_CreateVariableProfile('SmartClimate.VentilationRecommendation', 0);
-            IPS_SetVariableProfileAssociation('SmartClimate.VentilationRecommendation', false, 'Nicht Lüften!', '', -1);
-            IPS_SetVariableProfileAssociation('SmartClimate.VentilationRecommendation', true, 'Lüften!', '', -1);
-        }
-        $this->RegisterVariableBoolean("VentilationRecommendation", "Lüften empfohlen!", "SmartClimate.VentilationRecommendation");
+        $this->RegisterVariableBoolean("VentilationRecommendation", "Lüften empfohlen!", "");
         IPS_SetVariableCustomPresentation($this->GetIDForIdent('VentilationRecommendation'), [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Wind'

@@ -36,6 +36,7 @@ class FireplaceSafety extends IPSModuleStrict
 
         $this->RegisterVariableFloat("OvenPeakTemp", "Letzte Spitzen-Temperatur", "");
         $this->RegisterVariableBoolean("WoodRefillNeeded", "Bitte Holz nachlegen", "");
+        $this->RegisterVariableInteger("FiredCount", "Anzahl Angefeuert", "");
 
         // --- Timers ---
         $this->RegisterTimer("DoorAlarmTimer", 0, 'FS_TriggerDoorAlarm($_IPS[\'TARGET\']);');
@@ -74,6 +75,7 @@ class FireplaceSafety extends IPSModuleStrict
             IPS_SetVariableCustomPresentation($this->GetIDForIdent('OvenPeakTemp'),     ['ICON' => 'Temperature', 'SUFFIX' => ' °C']);
             IPS_SetVariableCustomPresentation($this->GetIDForIdent('OvenStatus'),        ['ICON' => 'Flame']);
             IPS_SetVariableCustomPresentation($this->GetIDForIdent('HoodStatus'),        ['ICON' => 'Information']);
+            IPS_SetVariableCustomPresentation($this->GetIDForIdent('FiredCount'),        ['ICON' => 'Flame']);
         }
         // Alarm-Variablen via Trait (Switch mit Farben)
         $this->SetupAlarmPresentation('AlarmOvenDoor',     'ALARM: Ofentür offen!');
@@ -139,8 +141,15 @@ class FireplaceSafety extends IPSModuleStrict
         $this->SendDebug("Timer", "Ofentür-Alarm ausgelöst!", 0);
     }
 
+    public function ResetFiredCount(): void
+    {
+        $this->SetValue("FiredCount", 0);
+        $this->SLog('INFO', 'Anzahl Angefeuert zurückgesetzt');
+    }
+
     private function UpdateSafety(): void
     {
+        $wasOvenOn  = (bool)$this->GetValue("OvenStatus");
         $ovenTempId = $this->ReadPropertyInteger("SensorOvenTemp");
         $roomTempId = $this->ReadPropertyInteger("SensorRoomTemp");
         
@@ -179,6 +188,12 @@ class FireplaceSafety extends IPSModuleStrict
         } else {
             $this->SetValueIfChanged("OvenPeakTemp", 0.0);    // Trait
             $this->SetValueIfChanged("WoodRefillNeeded", false); // Trait
+        }
+
+        if ($isOvenOn && !$wasOvenOn) {
+            $firedCount = (int)$this->GetValue("FiredCount");
+            $this->SetValue("FiredCount", $firedCount + 1);
+            $this->SLog('INFO', 'Kamin angefeuert', 'Anzahl Angefeuert: ' . ($firedCount + 1));
         }
         $this->SetValueIfChanged("OvenStatus", $isOvenOn); // Trait
 

@@ -52,6 +52,7 @@
 | AlarmOvenDoor | Alarm Ofentür | Boolean | Alarm, der ausgelöst wird, wenn die Ofentür zu lange offen steht (quittierbar). |
 | OvenPeakTemp | Letzte Spitzen-Temperatur | Float | Speichert die bisherige Höchsttemperatur in diesem Heizzyklus. |
 | WoodRefillNeeded | Bitte Holz nachlegen | Boolean | Gibt an, ob Holz nachgelegt werden sollte. |
+| FiredCount | Anzahl Angefeuert | Integer | Zählt, wie oft der Kamin angefeuert wurde. |
 
 ### 6. PHP-Befehlsreferenz
 
@@ -59,3 +60,8 @@
 FS_TriggerDoorAlarm(int $InstanceID);
 ```
 Löst den Ofentür-Alarm manuell aus.
+
+```php
+FS_ResetFiredCount(int $InstanceID);
+```
+Setzt den Zähler für die Anzahl der Anfeuerungen auf 0 zurück.

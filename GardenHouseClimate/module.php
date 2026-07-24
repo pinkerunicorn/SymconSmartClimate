@@ -43,15 +43,14 @@ class GardenHouseClimate extends IPSModuleStrict
         ]);
         $this->EnableAction("TargetTemperature");
         
-        $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", [
-            'PRESENTATION'  => VARIABLE_PRESENTATION_ENUMERATION,
-            'ICON'          => 'Information',
-            'VALUES' => [
-                ['VALUE' => 0, 'STRING' => 'Aus', 'ICON' => 'Sleep', 'COLOR' => 0x00FF00],
-                ['VALUE' => 1, 'STRING' => 'Heizen', 'ICON' => 'Flame', 'COLOR' => 0xFF0000],
-                ['VALUE' => 2, 'STRING' => 'Pausiert (Fenster offen)', 'ICON' => 'Window', 'COLOR' => 0xFFFF00]
-            ]
-        ]);
+        if (!IPS_VariableProfileExists('SmartClimate.HeaterStatus')) {
+            IPS_CreateVariableProfile('SmartClimate.HeaterStatus', 1);
+            IPS_SetVariableProfileIcon('SmartClimate.HeaterStatus', 'Information');
+            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 0, 'Aus', 'Sleep', 0x00FF00);
+            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 1, 'Heizen', 'Flame', 0xFF0000);
+            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 2, 'Pausiert (Fenster offen)', 'Window', 0xFFFF00);
+        }
+        $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", 'SmartClimate.HeaterStatus');
         
         // Alarms (no legacy profiles — use CustomPresentation via Trait)
         $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", "");

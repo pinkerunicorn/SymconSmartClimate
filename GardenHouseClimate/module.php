@@ -28,14 +28,13 @@ class GardenHouseClimate extends IPSModuleStrict
         $this->RegisterPropertyFloat("FrostWarningTemp", 3.0);
         
         // Variables
-        $this->RegisterVariableBoolean("WinterMode", "Winterbetrieb", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
-            'ICON'         => 'Gear'
-        ]);
+        $this->RegisterVariableBoolean("WinterMode", "Winterbetrieb", "");
+        IPS_SetIcon($this->GetIDForIdent('WinterMode'), 'Gear');
         $this->EnableAction("WinterMode");
         $this->SetValue("WinterMode", true); // Default to true
         
-        $this->RegisterVariableFloat("TargetTemperature", "Zieltemperatur Frostschutz", [
+        $this->RegisterVariableFloat("TargetTemperature", "Zieltemperatur Frostschutz", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('TargetTemperature'), [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Temperature',
             'SUFFIX'        => ' °C',
@@ -43,15 +42,19 @@ class GardenHouseClimate extends IPSModuleStrict
         ]);
         $this->EnableAction("TargetTemperature");
         
-        $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", [
-            'PRESENTATION'  => VARIABLE_PRESENTATION_ENUMERATION,
-            'ICON'          => 'Information',
-            'VALUES' => [
-                ['VALUE' => 0, 'STRING' => 'Aus', 'ICON' => 'Sleep', 'COLOR' => 0x00FF00],
-                ['VALUE' => 1, 'STRING' => 'Heizen', 'ICON' => 'Flame', 'COLOR' => 0xFF0000],
-                ['VALUE' => 2, 'STRING' => 'Pausiert (Fenster offen)', 'ICON' => 'Window', 'COLOR' => 0xFFFF00]
-            ]
+        $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('HeaterStatus'), [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Information'
         ]);
+        
+        if (!IPS_VariableProfileExists('SmartClimate.HeaterStatus')) {
+            IPS_CreateVariableProfile('SmartClimate.HeaterStatus', 1);
+            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 0, 'Aus', 'Sleep', 0x00FF00);
+            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 1, 'Heizen', 'Flame', 0xFF0000);
+            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 2, 'Pausiert (Fenster offen)', 'Window', 0xFFFF00);
+        }
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('HeaterStatus'), 'SmartClimate.HeaterStatus');
         
         // Alarms (no legacy profiles — use CustomPresentation via Trait)
         $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", "");
@@ -96,6 +99,11 @@ class GardenHouseClimate extends IPSModuleStrict
         $this->RegisterWindowReferences(); // Trait
         // ---------------------------------
 
+        // Presentations (Symcon 8+)
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('WinterMode'), [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON'         => 'Gear'
+        ]);
 
         // Alarm-Variablen via Trait (Switch mit Farben)
         $this->SetupAlarmPresentation('AlarmHeaterDefect', 'ALARM: Heizung defekt');
@@ -135,7 +143,7 @@ class GardenHouseClimate extends IPSModuleStrict
         }
     }
     
-    public function RequestAction(string $Ident, mixed $Value): void{
+    public function RequestAction(string $Ident, $Value): void{
         switch ($Ident) {
             case "TargetTemperature":
                 $this->SetValue($Ident, $Value);

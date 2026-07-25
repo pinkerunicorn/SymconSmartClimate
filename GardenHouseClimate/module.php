@@ -43,14 +43,15 @@ class GardenHouseClimate extends IPSModuleStrict
         ]);
         $this->EnableAction("TargetTemperature");
         
-        if (!IPS_VariableProfileExists('SmartClimate.HeaterStatus')) {
-            IPS_CreateVariableProfile('SmartClimate.HeaterStatus', 1);
-            IPS_SetVariableProfileIcon('SmartClimate.HeaterStatus', 'Information');
-            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 0, 'Aus', 'Sleep', 0x00FF00);
-            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 1, 'Heizen', 'Flame', 0xFF0000);
-            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 2, 'Pausiert (Fenster offen)', 'Window', 0xFFFF00);
-        }
-        $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", 'SmartClimate.HeaterStatus');
+        $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Information',
+            'ASSOCIATIONS'  => [
+                [0, 'Aus', 'Sleep', 0x00FF00],
+                [1, 'Heizen', 'Flame', 0xFF0000],
+                [2, 'Pausiert (Fenster offen)', 'Window', 0xFFFF00]
+            ]
+        ]);
         
         // Alarms (no legacy profiles — use CustomPresentation via Trait)
         $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", "");
@@ -96,10 +97,7 @@ class GardenHouseClimate extends IPSModuleStrict
         // ---------------------------------
 
 
-        // Alarm-Variablen via Trait (Switch mit Farben)
-        $this->SetupAlarmPresentation('AlarmHeaterDefect', 'ALARM: Heizung defekt');
-        $this->SetupAlarmPresentation('AlarmFrost',        'ALARM: Kritischer Frost');
-        $this->SetupAlarmPresentation('AlarmWindowOpen',   'ALARM: Fenster offen (Winter)', 'OK', 0xFF6600);
+        $this->SetupVariablePresentations();
 
         // Messages neu registrieren (Trait)
         $this->UnregisterAllMessages();
@@ -277,6 +275,39 @@ class GardenHouseClimate extends IPSModuleStrict
     {
         $this->StopTimer("WindowOpenTimer"); // Trait
         $this->SetValue("AlarmWindowOpen", true);
+    }
+
+    private function SetupVariablePresentations(): void
+    {
+        if (!function_exists('IPS_SetVariableCustomPresentation')) {
+            return;
+        }
+
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('WinterMode'), [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON'         => 'Gear'
+        ]);
+
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('TargetTemperature'), [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Temperature',
+            'SUFFIX'        => ' °C',
+            'DECIMALPLACES' => 1
+        ]);
+
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('HeaterStatus'), [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Information',
+            'ASSOCIATIONS'  => [
+                [0, 'Aus', 'Sleep', 0x00FF00],
+                [1, 'Heizen', 'Flame', 0xFF0000],
+                [2, 'Pausiert (Fenster offen)', 'Window', 0xFFFF00]
+            ]
+        ]);
+
+        $this->SetupAlarmPresentation('AlarmHeaterDefect', 'ALARM: Heizung defekt');
+        $this->SetupAlarmPresentation('AlarmFrost',        'ALARM: Kritischer Frost');
+        $this->SetupAlarmPresentation('AlarmWindowOpen',   'ALARM: Fenster offen (Winter)', 'OK', 0xFF6600);
     }
 
     public function GetConfigurationForm(): string

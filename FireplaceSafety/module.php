@@ -28,39 +28,68 @@ class FireplaceSafety extends IPSModuleStrict
 
         // --- Status-Variablen ---
         $this->RegisterVariableFloat("CurrentDeltaTemp", "Aktuelle Temperatur-Differenz", [
-            'ICON' => 'Temperature',
-            'SUFFIX' => ' °C'
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Temperature',
+            'SUFFIX'        => ' °C',
+            'DECIMALPLACES' => 1
         ]);
         
         $this->RegisterVariableBoolean("CurrentDoorStatus", "Status Ofentür", [
-            'ICON' => 'Window'
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON'         => 'Window',
+            'ONCAPTION'    => 'Offen',
+            'OFFCAPTION'   => 'Geschlossen',
+            'ONCOLOR'      => 0xFF9900,
+            'OFFCOLOR'     => 0x00FF00
         ]);
         
-        if (!IPS_VariableProfileExists('SmartClimate.OvenStatus')) {
-            IPS_CreateVariableProfile('SmartClimate.OvenStatus', 0);
-            IPS_SetVariableProfileAssociation('SmartClimate.OvenStatus', 0, 'Aus', 'Flame', -1);
-            IPS_SetVariableProfileAssociation('SmartClimate.OvenStatus', 1, 'Brennt', 'Flame', 0xFF0000);
-        }
-        $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", 'SmartClimate.OvenStatus');
+        $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON'         => 'Flame',
+            'ONCAPTION'    => 'Brennt',
+            'OFFCAPTION'   => 'Aus',
+            'ONCOLOR'      => 0xFF0000,
+            'OFFCOLOR'     => 0x00FF00
+        ]);
         
-        if (!IPS_VariableProfileExists('SmartClimate.HoodStatus')) {
-            IPS_CreateVariableProfile('SmartClimate.HoodStatus', 0);
-            IPS_SetVariableProfileAssociation('SmartClimate.HoodStatus', 0, 'Gesperrt', 'Lock', 0xFF0000);
-            IPS_SetVariableProfileAssociation('SmartClimate.HoodStatus', 1, 'Freigegeben', 'Unlock', 0x00FF00);
-        }
-        $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", 'SmartClimate.HoodStatus');
+        $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON'         => 'Lock',
+            'ONCAPTION'    => 'Freigegeben',
+            'OFFCAPTION'   => 'Gesperrt',
+            'ONCOLOR'      => 0x00FF00,
+            'OFFCOLOR'     => 0xFF0000
+        ]);
         
-        $this->RegisterVariableBoolean("AlarmOvenDoor", "Alarm Ofentür", "");
+        $this->RegisterVariableBoolean("AlarmOvenDoor", "Alarm Ofentür", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON'         => 'Warning',
+            'ONCAPTION'    => 'ALARM: Ofentür offen!',
+            'OFFCAPTION'   => 'OK',
+            'ONCOLOR'      => 0xFF0000,
+            'OFFCOLOR'     => 0x00FF00
+        ]);
         $this->EnableAction("AlarmOvenDoor"); // Quittierbar per Webfront
 
         $this->RegisterVariableFloat("OvenPeakTemp", "Letzte Spitzen-Temperatur", [
-            'ICON' => 'Temperature',
-            'SUFFIX' => ' °C'
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Temperature',
+            'SUFFIX'        => ' °C',
+            'DECIMALPLACES' => 1
         ]);
         
-        $this->RegisterVariableBoolean("WoodRefillNeeded", "Bitte Holz nachlegen", "");
+        $this->RegisterVariableBoolean("WoodRefillNeeded", "Bitte Holz nachlegen", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON'         => 'Flame',
+            'ONCAPTION'    => 'Bitte Holz nachlegen',
+            'OFFCAPTION'   => 'Genug Holz',
+            'ONCOLOR'      => 0xFF9900,
+            'OFFCOLOR'     => 0x00FF00
+        ]);
+
         $this->RegisterVariableInteger("FiredCount", "Anzahl Angefeuert", [
-            'ICON' => 'Flame'
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Flame'
         ]);
 
         // --- Timers ---
@@ -93,9 +122,8 @@ class FireplaceSafety extends IPSModuleStrict
         $this->RegisterWindowReferences(); // Trait
         // ---------------------------------
 
-        // Alarm-Variablen via Trait (Switch mit Farben)
-        $this->SetupAlarmPresentation('AlarmOvenDoor',     'ALARM: Ofentür offen!');
-        $this->SetupAlarmPresentation('WoodRefillNeeded',  'Bitte Holz nachlegen', 'Genug Holz', 0xFF9900);
+        // Custom Presentations (Symcon 8/9 Vorlagenmanager)
+        $this->SetupVariablePresentations();
 
         // Messages neu registrieren (Trait)
         $this->UnregisterAllMessages();
@@ -384,5 +412,78 @@ class FireplaceSafety extends IPSModuleStrict
     ]
 }
 EOT;
+    }
+
+    private function SetupVariablePresentations(): void
+    {
+        if (!function_exists('IPS_SetVariableCustomPresentation')) {
+            return;
+        }
+
+        $presentations = [
+            'CurrentDeltaTemp' => [
+                'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+                'ICON'          => 'Temperature',
+                'SUFFIX'        => ' °C',
+                'DECIMALPLACES' => 1
+            ],
+            'CurrentDoorStatus' => [
+                'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+                'ICON'         => 'Window',
+                'ONCAPTION'    => 'Offen',
+                'OFFCAPTION'   => 'Geschlossen',
+                'ONCOLOR'      => 0xFF9900,
+                'OFFCOLOR'     => 0x00FF00
+            ],
+            'OvenStatus' => [
+                'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+                'ICON'         => 'Flame',
+                'ONCAPTION'    => 'Brennt',
+                'OFFCAPTION'   => 'Aus',
+                'ONCOLOR'      => 0xFF0000,
+                'OFFCOLOR'     => 0x00FF00
+            ],
+            'HoodStatus' => [
+                'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+                'ICON'         => 'Lock',
+                'ONCAPTION'    => 'Freigegeben',
+                'OFFCAPTION'   => 'Gesperrt',
+                'ONCOLOR'      => 0x00FF00,
+                'OFFCOLOR'     => 0xFF0000
+            ],
+            'AlarmOvenDoor' => [
+                'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+                'ICON'         => 'Warning',
+                'ONCAPTION'    => 'ALARM: Ofentür offen!',
+                'OFFCAPTION'   => 'OK',
+                'ONCOLOR'      => 0xFF0000,
+                'OFFCOLOR'     => 0x00FF00
+            ],
+            'OvenPeakTemp' => [
+                'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+                'ICON'          => 'Temperature',
+                'SUFFIX'        => ' °C',
+                'DECIMALPLACES' => 1
+            ],
+            'WoodRefillNeeded' => [
+                'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+                'ICON'         => 'Flame',
+                'ONCAPTION'    => 'Bitte Holz nachlegen',
+                'OFFCAPTION'   => 'Genug Holz',
+                'ONCOLOR'      => 0xFF9900,
+                'OFFCOLOR'     => 0x00FF00
+            ],
+            'FiredCount' => [
+                'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+                'ICON'          => 'Flame'
+            ]
+        ];
+
+        foreach ($presentations as $ident => $presentation) {
+            $varID = @$this->GetIDForIdent($ident);
+            if ($varID !== false && $varID > 0) {
+                IPS_SetVariableCustomPresentation($varID, $presentation);
+            }
+        }
     }
 }

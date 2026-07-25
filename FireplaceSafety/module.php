@@ -27,16 +27,52 @@ class FireplaceSafety extends IPSModuleStrict
         $this->RegisterPropertyInteger("DoorAlarmTime", 300);
 
         // --- Status-Variablen ---
-        $this->RegisterVariableFloat("CurrentDeltaTemp", "Aktuelle Temperatur-Differenz", "");
-        $this->RegisterVariableBoolean("CurrentDoorStatus", "Status Ofentür", "");
-        $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", "");
-        $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", "");
-        $this->RegisterVariableBoolean("AlarmOvenDoor", "Alarm Ofentür", "");
+        $this->RegisterVariableFloat("CurrentDeltaTemp", "Aktuelle Temperatur-Differenz", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON' => 'Temperature',
+            'SUFFIX' => ' °C',
+            'DECIMALPLACES' => 1
+        ]);
+        
+        $this->RegisterVariableBoolean("CurrentDoorStatus", "Status Ofentür", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON' => 'Window'
+        ]);
+        
+        if (!IPS_VariableProfileExists('SmartClimate.OvenStatus')) {
+            IPS_CreateVariableProfile('SmartClimate.OvenStatus', 0);
+            IPS_SetVariableProfileAssociation('SmartClimate.OvenStatus', 0, 'Aus', 'Flame', -1);
+            IPS_SetVariableProfileAssociation('SmartClimate.OvenStatus', 1, 'Brennt', 'Flame', 0xFF0000);
+        }
+        $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", 'SmartClimate.OvenStatus');
+        
+        if (!IPS_VariableProfileExists('SmartClimate.HoodStatus')) {
+            IPS_CreateVariableProfile('SmartClimate.HoodStatus', 0);
+            IPS_SetVariableProfileAssociation('SmartClimate.HoodStatus', 0, 'Gesperrt', 'Lock', 0xFF0000);
+            IPS_SetVariableProfileAssociation('SmartClimate.HoodStatus', 1, 'Freigegeben', 'Unlock', 0x00FF00);
+        }
+        $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", 'SmartClimate.HoodStatus');
+        
+        $this->RegisterVariableBoolean("AlarmOvenDoor", "Alarm Ofentür", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON' => 'Warning'
+        ]);
         $this->EnableAction("AlarmOvenDoor"); // Quittierbar per Webfront
 
-        $this->RegisterVariableFloat("OvenPeakTemp", "Letzte Spitzen-Temperatur", "");
-        $this->RegisterVariableBoolean("WoodRefillNeeded", "Bitte Holz nachlegen", "");
-        $this->RegisterVariableInteger("FiredCount", "Anzahl Angefeuert", "");
+        $this->RegisterVariableFloat("OvenPeakTemp", "Letzte Spitzen-Temperatur", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON' => 'Temperature',
+            'SUFFIX' => ' °C'
+        ]);
+        
+        $this->RegisterVariableBoolean("WoodRefillNeeded", "Bitte Holz nachlegen", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON' => 'Flame'
+        ]);
+        $this->RegisterVariableInteger("FiredCount", "Anzahl Angefeuert", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON' => 'Flame'
+        ]);
 
         // --- Timers ---
         $this->RegisterTimer("DoorAlarmTimer", 0, 'FS_TriggerDoorAlarm($_IPS[\'TARGET\']);');
@@ -44,6 +80,34 @@ class FireplaceSafety extends IPSModuleStrict
 
     public function ApplyChanges(): void{
         parent::ApplyChanges();
+        
+        // Ensure existing instances get updated presentations
+        if (function_exists('IPS_SetVariableCustomPresentation')) {
+            $varsToUpdate = [
+                'CurrentDeltaTemp' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Temperature'],
+                'CurrentDoorStatus' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Window'],
+                'OvenPeakTemp' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Temperature'],
+                'WoodRefillNeeded' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Flame'],
+                'FiredCount' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Flame'],
+                'AlarmOvenDoor' => [VARIABLE_PRESENTATION_SWITCH, 'Warning']
+            ];
+            foreach ($varsToUpdate as $ident => $settings) {
+                $varID = @$this->GetIDForIdent($ident);
+                if ($varID !== false && $varID > 0) {
+                    IPS_SetVariableCustomPresentation($varID, $settings[0]);
+                    IPS_SetIcon($varID, $settings[1]);
+                }
+            }
+            
+            // Custom profiles (Associations) should also update their presentation mode
+            $customVars = ['OvenStatus' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'HoodStatus' => VARIABLE_PRESENTATION_VALUE_PRESENTATION];
+            foreach ($customVars as $ident => $pres) {
+                $varID = @$this->GetIDForIdent($ident);
+                if ($varID !== false && $varID > 0) {
+                    IPS_SetVariableCustomPresentation($varID, $pres);
+                }
+            }
+        }
         
         // --- Auto-generated References ---
         foreach ($this->GetReferenceList() as $refID) {

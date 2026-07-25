@@ -35,7 +35,7 @@ class FireplaceSafety extends IPSModuleStrict
         ]);
         
         $this->RegisterVariableBoolean("CurrentDoorStatus", "Status Ofentür", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Window',
             'ONCAPTION'    => 'Offen',
             'OFFCAPTION'   => 'Geschlossen',
@@ -44,7 +44,7 @@ class FireplaceSafety extends IPSModuleStrict
         ]);
         
         $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Flame',
             'ONCAPTION'    => 'Brennt',
             'OFFCAPTION'   => 'Aus',
@@ -53,7 +53,7 @@ class FireplaceSafety extends IPSModuleStrict
         ]);
         
         $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Lock',
             'ONCAPTION'    => 'Freigegeben',
             'OFFCAPTION'   => 'Gesperrt',
@@ -79,7 +79,7 @@ class FireplaceSafety extends IPSModuleStrict
         ]);
         
         $this->RegisterVariableBoolean("WoodRefillNeeded", "Bitte Holz nachlegen", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Flame',
             'ONCAPTION'    => 'Bitte Holz nachlegen',
             'OFFCAPTION'   => 'Genug Holz',
@@ -428,7 +428,7 @@ EOT;
                 'DECIMALPLACES' => 1
             ],
             'CurrentDoorStatus' => [
-                'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+                'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
                 'ICON'         => 'Window',
                 'ONCAPTION'    => 'Offen',
                 'OFFCAPTION'   => 'Geschlossen',
@@ -436,7 +436,7 @@ EOT;
                 'OFFCOLOR'     => 0x00FF00
             ],
             'OvenStatus' => [
-                'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+                'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
                 'ICON'         => 'Flame',
                 'ONCAPTION'    => 'Brennt',
                 'OFFCAPTION'   => 'Aus',
@@ -444,7 +444,7 @@ EOT;
                 'OFFCOLOR'     => 0x00FF00
             ],
             'HoodStatus' => [
-                'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+                'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
                 'ICON'         => 'Lock',
                 'ONCAPTION'    => 'Freigegeben',
                 'OFFCAPTION'   => 'Gesperrt',
@@ -466,7 +466,7 @@ EOT;
                 'DECIMALPLACES' => 1
             ],
             'WoodRefillNeeded' => [
-                'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+                'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
                 'ICON'         => 'Flame',
                 'ONCAPTION'    => 'Bitte Holz nachlegen',
                 'OFFCAPTION'   => 'Genug Holz',

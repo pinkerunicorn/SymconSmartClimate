@@ -53,35 +53,17 @@ class GardenHouseClimate extends IPSModuleStrict
             ]
         ]);
         
-        // Alarms (no legacy profiles)
-        $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
-            'ICON'         => 'Warning',
-            'ONCOLOR'      => 0xFF0000,
-            'OFFCOLOR'     => 0x00FF00,
-            'ONCAPTION'    => 'ALARM: Heizung defekt',
-            'OFFCAPTION'   => 'OK'
-        ]);
+        // Alarms (no legacy profiles — use CustomPresentation via Trait)
+        $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", "");
+        IPS_SetIcon($this->GetIDForIdent('AlarmHeaterDefect'), 'Warning');
         $this->EnableAction("AlarmHeaterDefect");
         
-        $this->RegisterVariableBoolean("AlarmFrost", "Alarm: Kritischer Frost", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
-            'ICON'         => 'Warning',
-            'ONCOLOR'      => 0xFF0000,
-            'OFFCOLOR'     => 0x00FF00,
-            'ONCAPTION'    => 'ALARM: Kritischer Frost',
-            'OFFCAPTION'   => 'OK'
-        ]);
+        $this->RegisterVariableBoolean("AlarmFrost", "Alarm: Kritischer Frost", "");
+        IPS_SetIcon($this->GetIDForIdent('AlarmFrost'), 'Warning');
         $this->EnableAction("AlarmFrost");
         
-        $this->RegisterVariableBoolean("AlarmWindowOpen", "Alarm: Fenster offen (Winter)", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
-            'ICON'         => 'Warning',
-            'ONCOLOR'      => 0xFF6600,
-            'OFFCOLOR'     => 0x00FF00,
-            'ONCAPTION'    => 'ALARM: Fenster offen (Winter)',
-            'OFFCAPTION'   => 'OK'
-        ]);
+        $this->RegisterVariableBoolean("AlarmWindowOpen", "Alarm: Fenster offen (Winter)", "");
+        IPS_SetIcon($this->GetIDForIdent('AlarmWindowOpen'), 'Warning');
         $this->EnableAction("AlarmWindowOpen");
         
         // Timers
@@ -115,7 +97,7 @@ class GardenHouseClimate extends IPSModuleStrict
         // ---------------------------------
 
 
-        // Presentations configured in Create()
+        $this->SetupVariablePresentations();
 
         // Messages neu registrieren (Trait)
         $this->UnregisterAllMessages();
@@ -295,6 +277,38 @@ class GardenHouseClimate extends IPSModuleStrict
         $this->SetValue("AlarmWindowOpen", true);
     }
 
+    private function SetupVariablePresentations(): void
+    {
+        if (!function_exists('IPS_SetVariableCustomPresentation')) {
+            return;
+        }
+
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('WinterMode'), [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON'         => 'Gear'
+        ]);
+
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('TargetTemperature'), [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Temperature',
+            'SUFFIX'        => ' °C',
+            'DECIMALPLACES' => 1
+        ]);
+
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('HeaterStatus'), [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Information',
+            'ASSOCIATIONS'  => [
+                [0, 'Aus', 'Sleep', 0x00FF00],
+                [1, 'Heizen', 'Flame', 0xFF0000],
+                [2, 'Pausiert (Fenster offen)', 'Window', 0xFFFF00]
+            ]
+        ]);
+
+        $this->SetupAlarmPresentation('AlarmHeaterDefect', 'ALARM: Heizung defekt');
+        $this->SetupAlarmPresentation('AlarmFrost',        'ALARM: Kritischer Frost');
+        $this->SetupAlarmPresentation('AlarmWindowOpen',   'ALARM: Fenster offen (Winter)', 'OK', 0xFF6600);
+    }
 
     public function GetConfigurationForm(): string
     {

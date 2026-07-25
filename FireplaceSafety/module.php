@@ -36,19 +36,21 @@ class FireplaceSafety extends IPSModuleStrict
             'ICON' => 'Window'
         ]);
         
-        if (!IPS_VariableProfileExists('SmartClimate.OvenStatus')) {
-            IPS_CreateVariableProfile('SmartClimate.OvenStatus', 0);
-            IPS_SetVariableProfileAssociation('SmartClimate.OvenStatus', 0, 'Aus', 'Flame', -1);
-            IPS_SetVariableProfileAssociation('SmartClimate.OvenStatus', 1, 'Brennt', 'Flame', 0xFF0000);
-        }
-        $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", 'SmartClimate.OvenStatus');
+        $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION,
+            'VALUES' => [
+                ['VALUE' => false, 'STRING' => 'Aus', 'ICON' => 'Flame', 'COLOR' => -1],
+                ['VALUE' => true, 'STRING' => 'Brennt', 'ICON' => 'Flame', 'COLOR' => 0xFF0000]
+            ]
+        ]);
         
-        if (!IPS_VariableProfileExists('SmartClimate.HoodStatus')) {
-            IPS_CreateVariableProfile('SmartClimate.HoodStatus', 0);
-            IPS_SetVariableProfileAssociation('SmartClimate.HoodStatus', 0, 'Gesperrt', 'Lock', 0xFF0000);
-            IPS_SetVariableProfileAssociation('SmartClimate.HoodStatus', 1, 'Freigegeben', 'Unlock', 0x00FF00);
-        }
-        $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", 'SmartClimate.HoodStatus');
+        $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION,
+            'VALUES' => [
+                ['VALUE' => false, 'STRING' => 'Gesperrt', 'ICON' => 'Lock', 'COLOR' => 0xFF0000],
+                ['VALUE' => true, 'STRING' => 'Freigegeben', 'ICON' => 'Unlock', 'COLOR' => 0x00FF00]
+            ]
+        ]);
         
         $this->RegisterVariableBoolean("AlarmOvenDoor", "Alarm Ofentür", "");
         $this->EnableAction("AlarmOvenDoor"); // Quittierbar per Webfront

@@ -94,7 +94,7 @@ class FireplaceSafety extends IPSModuleStrict
             foreach ($varsToUpdate as $ident => $settings) {
                 $varID = @$this->GetIDForIdent($ident);
                 if ($varID !== false && $varID > 0) {
-                    IPS_SetVariableCustomPresentation($varID, $settings[0]);
+                    IPS_SetVariableCustomPresentation($varID, ['PRESENTATION' => $settings[0]]);
                     IPS_SetIcon($varID, $settings[1]);
                 }
             }
@@ -104,7 +104,7 @@ class FireplaceSafety extends IPSModuleStrict
             foreach ($customVars as $ident => $pres) {
                 $varID = @$this->GetIDForIdent($ident);
                 if ($varID !== false && $varID > 0) {
-                    IPS_SetVariableCustomPresentation($varID, $pres);
+                    IPS_SetVariableCustomPresentation($varID, ['PRESENTATION' => $pres]);
                 }
             }
         }

@@ -83,11 +83,35 @@
         },
         "RadonWarningLevel": {
             "type": "float",
-            "default": 100
+            "default": 300
         },
         "RadonAlarmLevel": {
             "type": "float",
-            "default": 300
+            "default": 1000
+        },
+        "SensorCO2": {
+            "type": "integer",
+            "default": 0
+        },
+        "CO2WarningLevel": {
+            "type": "float",
+            "default": 1000
+        },
+        "CO2AlarmLevel": {
+            "type": "float",
+            "default": 2000
+        },
+        "SensorVOC": {
+            "type": "integer",
+            "default": 0
+        },
+        "VOCWarningLevel": {
+            "type": "float",
+            "default": 500
+        },
+        "VOCAlarmLevel": {
+            "type": "float",
+            "default": 1500
         }
     }
 }

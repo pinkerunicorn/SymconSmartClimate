@@ -20,8 +20,17 @@ class BasementClimate extends IPSModuleStrict
         
         $this->RegisterPropertyInteger("SensorRadonShortTerm", 0);
         $this->RegisterPropertyInteger("SensorRadonLongTerm", 0);
-        $this->RegisterPropertyFloat("RadonWarningLevel", 100.0);
-        $this->RegisterPropertyFloat("RadonAlarmLevel",   300.0);
+        // Defaults: Nicht-Dauerbewohner-Raum (Keller) laut BfS: Warnung 300, Alarm 1000 Bq/m³
+        $this->RegisterPropertyFloat("RadonWarningLevel", 300.0);
+        $this->RegisterPropertyFloat("RadonAlarmLevel",  1000.0);
+        
+        $this->RegisterPropertyInteger("SensorCO2", 0);
+        $this->RegisterPropertyFloat("CO2WarningLevel", 1000.0);  // ppm
+        $this->RegisterPropertyFloat("CO2AlarmLevel",   2000.0);  // ppm
+        
+        $this->RegisterPropertyInteger("SensorVOC", 0);
+        $this->RegisterPropertyFloat("VOCWarningLevel",  500.0);  // µg/m³
+        $this->RegisterPropertyFloat("VOCAlarmLevel",   1500.0);  // µg/m³
         
         $this->RegisterPropertyInteger("ActuatorDehumidifierPlug", 0);
         $this->RegisterPropertyInteger("SensorDehumidifierPower", 0);
@@ -118,6 +127,52 @@ class BasementClimate extends IPSModuleStrict
             'ICON'         => 'Gauge'
         ]);
         
+        // Gemeinsames Profil fuer CO2- und VOC-Status
+        if (!IPS_VariableProfileExists('SmartClimate.AirQualityStatus')) {
+            IPS_CreateVariableProfile('SmartClimate.AirQualityStatus', 1);
+            IPS_SetVariableProfileAssociation('SmartClimate.AirQualityStatus', 0, 'Gut',     'Ok',      0x00BB00);
+            IPS_SetVariableProfileAssociation('SmartClimate.AirQualityStatus', 1, 'Erhöht',  'Warning', 0xFFAA00);
+            IPS_SetVariableProfileAssociation('SmartClimate.AirQualityStatus', 2, 'Schlecht', 'Alert',   0xFF0000);
+        }
+        
+        $this->RegisterVariableFloat("CO2Value", "CO₂-Konzentration", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CO2Value'), [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Climate',
+            'SUFFIX'        => ' ppm',
+            'DECIMALPLACES' => 0
+        ]);
+        $this->RegisterVariableInteger("CO2Status", "CO₂ Status", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CO2Status'), [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Climate'
+        ]);
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('CO2Status'), 'SmartClimate.AirQualityStatus');
+        $this->RegisterVariableString("CO2Recommendation", "CO₂ Empfehlung", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CO2Recommendation'), [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Climate'
+        ]);
+        
+        $this->RegisterVariableFloat("VOCValue", "VOC-Konzentration", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VOCValue'), [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Climate',
+            'SUFFIX'        => ' µg/m³',
+            'DECIMALPLACES' => 0
+        ]);
+        $this->RegisterVariableInteger("VOCStatus", "VOC Status", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VOCStatus'), [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Climate'
+        ]);
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('VOCStatus'), 'SmartClimate.AirQualityStatus');
+        $this->RegisterVariableString("VOCRecommendation", "VOC Empfehlung", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VOCRecommendation'), [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Climate'
+        ]);
+        
         $sliderPresentation = [
             'PRESENTATION'  => VARIABLE_PRESENTATION_SLIDER,
             'ICON'          => 'Drops',
@@ -210,6 +265,14 @@ class BasementClimate extends IPSModuleStrict
         if ($ref_SensorRadonLongTerm > 1 && @IPS_ObjectExists($ref_SensorRadonLongTerm)) {
             $this->RegisterReference($ref_SensorRadonLongTerm);
         }
+        $ref_SensorCO2 = $this->ReadPropertyInteger('SensorCO2');
+        if ($ref_SensorCO2 > 1 && @IPS_ObjectExists($ref_SensorCO2)) {
+            $this->RegisterReference($ref_SensorCO2);
+        }
+        $ref_SensorVOC = $this->ReadPropertyInteger('SensorVOC');
+        if ($ref_SensorVOC > 1 && @IPS_ObjectExists($ref_SensorVOC)) {
+            $this->RegisterReference($ref_SensorVOC);
+        }
         $this->RegisterWindowReferences(); // Trait
         // ---------------------------------
 
@@ -217,7 +280,7 @@ class BasementClimate extends IPSModuleStrict
         $this->UnregisterAllMessages();
         
         $sensors = ["SensorTempOutside", "SensorHumOutside", "SensorTempInside", "SensorHumInside",
-                    "SensorRadonShortTerm", "SensorRadonLongTerm"];
+                    "SensorRadonShortTerm", "SensorRadonLongTerm", "SensorCO2", "SensorVOC"];
         foreach ($sensors as $sensorName) {
             $id = $this->ReadPropertyInteger($sensorName);
             if ($id > 0 && IPS_VariableExists($id)) {
@@ -256,13 +319,15 @@ class BasementClimate extends IPSModuleStrict
         }
 
         $this->UpdateClimate();
-        $this->SyncRadonValues();
+        $this->SyncAirQualityValues();
     }
     
     public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void{
-        $powerId          = $this->ReadPropertyInteger("SensorDehumidifierPower");
-        $radonShortId     = $this->ReadPropertyInteger("SensorRadonShortTerm");
-        $radonLongId      = $this->ReadPropertyInteger("SensorRadonLongTerm");
+        $powerId      = $this->ReadPropertyInteger("SensorDehumidifierPower");
+        $radonShortId = $this->ReadPropertyInteger("SensorRadonShortTerm");
+        $radonLongId  = $this->ReadPropertyInteger("SensorRadonLongTerm");
+        $co2Id        = $this->ReadPropertyInteger("SensorCO2");
+        $vocId        = $this->ReadPropertyInteger("SensorVOC");
         
         if ($SenderID == $powerId) {
             $this->HandlePowerUpdate($Data[0]);
@@ -272,6 +337,12 @@ class BasementClimate extends IPSModuleStrict
         } elseif ($radonLongId > 0 && $SenderID == $radonLongId) {
             $this->SetValueIfChanged("RadonLongTerm", (float) $Data[0]);
             $this->EvaluateRadon($this->GetValue("RadonShortTerm"), (float) $Data[0]);
+        } elseif ($co2Id > 0 && $SenderID == $co2Id) {
+            $this->SetValueIfChanged("CO2Value", (float) $Data[0]);
+            $this->EvaluateCO2((float) $Data[0]);
+        } elseif ($vocId > 0 && $SenderID == $vocId) {
+            $this->SetValueIfChanged("VOCValue", (float) $Data[0]);
+            $this->EvaluateVOC((float) $Data[0]);
         } else {
             $this->UpdateClimate();
         }
@@ -463,11 +534,11 @@ class BasementClimate extends IPSModuleStrict
         $this->UpdateClimate();
     }
 
-    private function SyncRadonValues(): void
+    private function SyncAirQualityValues(): void
     {
+        // --- Radon ---
         $short = null;
         $long  = null;
-        
         $radonShortId = $this->ReadPropertyInteger("SensorRadonShortTerm");
         if ($radonShortId > 0 && IPS_VariableExists($radonShortId)) {
             $short = (float) GetValue($radonShortId);
@@ -478,54 +549,134 @@ class BasementClimate extends IPSModuleStrict
             $long = (float) GetValue($radonLongId);
             $this->SetValueIfChanged("RadonLongTerm", $long);
         }
-        
-        // Use cached values if sensor not configured
         if ($short === null) $short = $this->GetValue("RadonShortTerm");
         if ($long  === null) $long  = $this->GetValue("RadonLongTerm");
-        
         $this->EvaluateRadon($short, $long);
+        
+        // --- CO2 ---
+        $co2Id = $this->ReadPropertyInteger("SensorCO2");
+        if ($co2Id > 0 && IPS_VariableExists($co2Id)) {
+            $co2 = (float) GetValue($co2Id);
+            $this->SetValueIfChanged("CO2Value", $co2);
+            $this->EvaluateCO2($co2);
+        } else {
+            $this->EvaluateCO2($this->GetValue("CO2Value"));
+        }
+        
+        // --- VOC ---
+        $vocId = $this->ReadPropertyInteger("SensorVOC");
+        if ($vocId > 0 && IPS_VariableExists($vocId)) {
+            $voc = (float) GetValue($vocId);
+            $this->SetValueIfChanged("VOCValue", $voc);
+            $this->EvaluateVOC($voc);
+        } else {
+            $this->EvaluateVOC($this->GetValue("VOCValue"));
+        }
     }
     
     private function EvaluateRadon(float $short, float $long): void
     {
         $warnLevel  = $this->ReadPropertyFloat("RadonWarningLevel");
         $alarmLevel = $this->ReadPropertyFloat("RadonAlarmLevel");
-        
-        // Bestimme den höchsten Wert (Kurzzeit kann kurzfristige Spitzen zeigen)
-        $maxValue = max($short, $long);
+        $maxValue   = max($short, $long);
         
         if ($maxValue >= $alarmLevel) {
             $status = 2;
             $recommendation = sprintf(
-                'ALARM: Radon-Wert kritisch! Sofort und dauerhaft lüften! '
-                . 'Kurzzeit: %d Bq/m³, Langzeit: %d Bq/m³ '
-                . '(WHO-Grenzwert: %d Bq/m³). Bei dauerhaft erhöhten Werten Fachmann hinzuziehen.',
+                'ALARM: Radon-Wert extrem erhöht! Keller sofort und dauerhaft lüften! '
+                . 'Kurzzeit: %d Bq/m³, Langzeit: %d Bq/m³ (Alarmschwelle: %d Bq/m³). '
+                . 'Dringende Sanierungsmaßnahmen prüfen!',
                 (int) $short, (int) $long, (int) $alarmLevel
             );
         } elseif ($maxValue >= $warnLevel) {
             $status = 1;
             $recommendation = sprintf(
                 'Erhöhte Radon-Werte. Regelmäßig lüften empfohlen! '
-                . 'Kurzzeit: %d Bq/m³, Langzeit: %d Bq/m³ '
-                . '(Warnschwelle: %d Bq/m³).',
+                . 'Kurzzeit: %d Bq/m³, Langzeit: %d Bq/m³ (Warnschwelle: %d Bq/m³).',
                 (int) $short, (int) $long, (int) $warnLevel
             );
         } else {
             $status = 0;
             $recommendation = sprintf(
-                'Radon-Werte im unbedenklichen Bereich. '
-                . 'Kurzzeit: %d Bq/m³, Langzeit: %d Bq/m³.',
+                'Radon-Werte in Ordnung. Kurzzeit: %d Bq/m³, Langzeit: %d Bq/m³.',
                 (int) $short, (int) $long
             );
         }
         
         $this->SetValueIfChanged("RadonStatus", $status);
         $this->SetValueIfChanged("RadonRecommendation", $recommendation);
-        
         if ($status === 2) {
             $this->SLog('WARNING', 'Radon ALARM', sprintf('Kurzzeit: %d, Langzeit: %d Bq/m³', (int) $short, (int) $long));
         } elseif ($status === 1) {
             $this->SLog('INFO', 'Radon erhöht', sprintf('Kurzzeit: %d, Langzeit: %d Bq/m³', (int) $short, (int) $long));
+        }
+    }
+    
+    private function EvaluateCO2(float $value): void
+    {
+        $warnLevel  = $this->ReadPropertyFloat("CO2WarningLevel");
+        $alarmLevel = $this->ReadPropertyFloat("CO2AlarmLevel");
+        
+        if ($value >= $alarmLevel) {
+            $status = 2;
+            $recommendation = sprintf(
+                'SCHLECHTE Luftqualität! CO₂-Konzentration sehr hoch: %d ppm (Alarm ab %d ppm). '
+                . 'Sofort lüften – Kellerfenster und -türen öffnen!',
+                (int) $value, (int) $alarmLevel
+            );
+        } elseif ($value >= $warnLevel) {
+            $status = 1;
+            $recommendation = sprintf(
+                'CO₂ erhöht: %d ppm (Warnschwelle: %d ppm). '
+                . 'Lüften empfohlen für bessere Luftqualität.',
+                (int) $value, (int) $warnLevel
+            );
+        } else {
+            $status = 0;
+            $recommendation = sprintf(
+                'CO₂-Konzentration gut: %d ppm. Keine Maßnahmen erforderlich.',
+                (int) $value
+            );
+        }
+        
+        $this->SetValueIfChanged("CO2Status", $status);
+        $this->SetValueIfChanged("CO2Recommendation", $recommendation);
+        if ($status === 2) {
+            $this->SLog('WARNING', 'CO2 ALARM', sprintf('%d ppm', (int) $value));
+        }
+    }
+    
+    private function EvaluateVOC(float $value): void
+    {
+        $warnLevel  = $this->ReadPropertyFloat("VOCWarningLevel");
+        $alarmLevel = $this->ReadPropertyFloat("VOCAlarmLevel");
+        
+        if ($value >= $alarmLevel) {
+            $status = 2;
+            $recommendation = sprintf(
+                'SCHLECHTE Luftqualität! VOC-Belastung sehr hoch: %d µg/m³ (Alarm ab %d µg/m³). '
+                . 'Sofort lüften! Mögliche Quellen prüfen (Lacke, Lösungsmittel, Baumaterialien).',
+                (int) $value, (int) $alarmLevel
+            );
+        } elseif ($value >= $warnLevel) {
+            $status = 1;
+            $recommendation = sprintf(
+                'VOC-Belastung erhöht: %d µg/m³ (Warnschwelle: %d µg/m³). '
+                . 'Lüften empfohlen.',
+                (int) $value, (int) $warnLevel
+            );
+        } else {
+            $status = 0;
+            $recommendation = sprintf(
+                'VOC-Belastung unbedenklich: %d µg/m³. Keine Maßnahmen erforderlich.',
+                (int) $value
+            );
+        }
+        
+        $this->SetValueIfChanged("VOCStatus", $status);
+        $this->SetValueIfChanged("VOCRecommendation", $recommendation);
+        if ($status === 2) {
+            $this->SLog('WARNING', 'VOC ALARM', sprintf('%d µg/m³', (int) $value));
         }
     }
 
@@ -687,7 +838,7 @@ class BasementClimate extends IPSModuleStrict
         },
         {
             "type": "Label",
-            "caption": "Radon-Schwellwerte\n\nHier legst du fest, ab welchem Wert das Modul warnt bzw. Alarm schlägt. WHO-Referenzwert: 300 Bq/m³. Empfohlene Warnschwelle: 100 Bq/m³."
+            "caption": "Radon-Schwellwerte\n\nFür Keller ohne dauerhaften Aufenthalt: Warnung 300 Bq/m³, Alarm 1000 Bq/m³ (BfS-Empfehlung). WHO-Referenzwert für Wohnräume: 300 Bq/m³."
         },
         {
             "type": "RowLayout",
@@ -702,6 +853,58 @@ class BasementClimate extends IPSModuleStrict
                     "type": "NumberSpinner",
                     "name": "RadonAlarmLevel",
                     "caption": "Alarmschwelle (Bq/m³)",
+                    "digits": 0
+                }
+            ]
+        },
+        {
+            "type": "Label",
+            "caption": "CO₂-Sensor\n\nKohlendioxid-Konzentration in ppm. Frischluft ca. 400 ppm, gute Raumluft < 1000 ppm, erhöht 1000–2000 ppm, schlecht > 2000 ppm."
+        },
+        {
+            "type": "SelectVariable",
+            "name": "SensorCO2",
+            "caption": "CO₂-Sensor (ppm)"
+        },
+        {
+            "type": "RowLayout",
+            "items": [
+                {
+                    "type": "NumberSpinner",
+                    "name": "CO2WarningLevel",
+                    "caption": "CO₂ Warnschwelle (ppm)",
+                    "digits": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "CO2AlarmLevel",
+                    "caption": "CO₂ Alarmschwelle (ppm)",
+                    "digits": 0
+                }
+            ]
+        },
+        {
+            "type": "Label",
+            "caption": "VOC-Sensor\n\nFlüchtige organische Verbindungen in µg/m³. Gut < 500, erhöht 500–1500, schlecht > 1500 µg/m³. Abhängig vom Sensor-Modell – Schwellwerte ggf. anpassen."
+        },
+        {
+            "type": "SelectVariable",
+            "name": "SensorVOC",
+            "caption": "VOC-Sensor (µg/m³)"
+        },
+        {
+            "type": "RowLayout",
+            "items": [
+                {
+                    "type": "NumberSpinner",
+                    "name": "VOCWarningLevel",
+                    "caption": "VOC Warnschwelle (µg/m³)",
+                    "digits": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "VOCAlarmLevel",
+                    "caption": "VOC Alarmschwelle (µg/m³)",
                     "digits": 0
                 }
             ]

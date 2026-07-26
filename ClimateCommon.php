@@ -35,8 +35,12 @@ trait ClimateCommon
 
     protected function LogMessage(string $Message, int $Type): bool
     {
-        $this->SLog('INFO', $Message);
-        IPS_LogMessage('SmartVillaKunterbunt', static::class . ': ' . $Message);
+        $level = match(true) {
+            $Type >= IS_EBASE => 'ERROR',
+            $Type >= IS_WBASE => 'WARNING',
+            default           => 'INFO',
+        };
+        $this->SLog($level, $Message);
         return true;
     }
 
@@ -82,6 +86,7 @@ trait ClimateCommon
      */
     protected function IsWindowOpen(int $variableId, string $closedValue): bool
     {
+        if (!IPS_VariableExists($variableId)) return false;
         $currentVal = GetValue($variableId);
         $isClosed = false;
 

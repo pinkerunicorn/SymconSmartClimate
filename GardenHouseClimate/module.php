@@ -28,7 +28,9 @@ class GardenHouseClimate extends IPSModuleStrict
         $this->RegisterPropertyFloat("FrostWarningTemp", 3.0);
         
         // Variables
-        $this->RegisterVariableBoolean("WinterMode", "Winterbetrieb", "");
+        $this->RegisterVariableBoolean("WinterMode", "Winterbetrieb", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION
+        ]);
         IPS_SetIcon($this->GetIDForIdent('WinterMode'), 'Gear');
         $this->EnableAction("WinterMode");
         $this->SetValue("WinterMode", true); // Default to true
@@ -203,7 +205,10 @@ class GardenHouseClimate extends IPSModuleStrict
         $hysteresis = $this->ReadPropertyFloat("Hysteresis");
         
         $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
-        if ($plugId == 0 || !IPS_VariableExists($plugId)) return;
+        if ($plugId == 0 || !IPS_VariableExists($plugId)) {
+            $this->SLog('WARNING', 'Aktor nicht konfiguriert oder nicht gefunden', "Property-ID: ActuatorHeaterPlug");
+            return;
+        }
         
         $plugStatus = (bool)GetValue($plugId);
         
@@ -219,7 +224,10 @@ class GardenHouseClimate extends IPSModuleStrict
     private function SetHeater(bool $state, int $statusText): void
     {
         $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
-        if ($plugId == 0 || !IPS_VariableExists($plugId)) return;
+        if ($plugId == 0 || !IPS_VariableExists($plugId)) {
+            $this->SLog('WARNING', 'Aktor nicht konfiguriert oder nicht gefunden', "Property-ID: ActuatorHeaterPlug");
+            return;
+        }
         
         $plugStatus = (bool)GetValue($plugId);
         if ($plugStatus !== $state) {
@@ -243,8 +251,12 @@ class GardenHouseClimate extends IPSModuleStrict
         if (!$winterMode) return;
         
         $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
-        if ($plugId == 0) return;
+        if ($plugId == 0) {
+            $this->SLog('WARNING', 'Aktor nicht konfiguriert', "Property-ID: ActuatorHeaterPlug");
+            return;
+        }
         
+        if (!IPS_VariableExists($plugId)) return;
         $plugStatus = (bool)GetValue($plugId);
         $threshold  = $this->ReadPropertyFloat("HeaterPowerThreshold");
         $timeLimit  = $this->ReadPropertyInteger("HeaterDefectTime");

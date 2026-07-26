@@ -44,14 +44,20 @@ class FireplaceSafety extends IPSModuleStrict
             IPS_SetVariableProfileAssociation('SmartClimate.OvenStatus', 0, 'Aus', 'Flame', -1);
             IPS_SetVariableProfileAssociation('SmartClimate.OvenStatus', 1, 'Brennt', 'Flame', 0xFF0000);
         }
-        $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", 'SmartClimate.OvenStatus');
+        $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'PROFILE'      => 'SmartClimate.OvenStatus'
+        ]);
         
         if (!IPS_VariableProfileExists('SmartClimate.HoodStatus')) {
             IPS_CreateVariableProfile('SmartClimate.HoodStatus', 0);
             IPS_SetVariableProfileAssociation('SmartClimate.HoodStatus', 0, 'Gesperrt', 'Lock', 0xFF0000);
             IPS_SetVariableProfileAssociation('SmartClimate.HoodStatus', 1, 'Freigegeben', 'Unlock', 0x00FF00);
         }
-        $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", 'SmartClimate.HoodStatus');
+        $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'PROFILE'      => 'SmartClimate.HoodStatus'
+        ]);
         
         $this->RegisterVariableBoolean("AlarmOvenDoor", "Alarm Ofentür", [
             'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
@@ -307,6 +313,8 @@ class FireplaceSafety extends IPSModuleStrict
                     $this->SLog('WARNING', 'Haubenbefehl fehlgeschlagen', "Actuator ID: $actuatorId | Ziel: " . ($allowHood ? 'An' : 'Aus'));
                 }
             }
+        } else {
+            $this->SLog('WARNING', 'Aktor nicht konfiguriert', 'actuatorId: ' . $actuatorId);
         }
     }
 

@@ -34,19 +34,16 @@ class BasementClimate extends IPSModuleStrict
         $this->RegisterPropertyFloat("VentilationCloseMargin", 0.3);
         
         // Variables
-        $this->RegisterVariableBoolean("VentilationRecommendation", "Lüften empfohlen!", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VentilationRecommendation'), [
+        $this->RegisterVariableBoolean("VentilationRecommendation", "Lüften empfohlen!", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Wind'
         ]);
-        $this->RegisterVariableString("VentilationDetails", "Hinweis", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VentilationDetails'), [
+        $this->RegisterVariableString("VentilationDetails", "Hinweis", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Wind'
         ]);
         
-        $this->RegisterVariableFloat("DewPointInside", "Taupunkt Keller", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DewPointInside'), [
+        $this->RegisterVariableFloat("DewPointInside", "Taupunkt Keller", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops',
             'SUFFIX'        => ' °C',
@@ -307,7 +304,10 @@ class BasementClimate extends IPSModuleStrict
     private function ControlDehumidifier(float $humIn, bool $windowOpen): void
     {
         $plugId = $this->ReadPropertyInteger("ActuatorDehumidifierPlug");
-        if ($plugId == 0 || !IPS_VariableExists($plugId)) return;
+        if ($plugId == 0 || !IPS_VariableExists($plugId)) {
+            $this->SLog('WARNING', 'Aktor nicht konfiguriert oder nicht gefunden', "Property-ID: ActuatorDehumidifierPlug");
+            return;
+        }
         
         $maxHum   = $this->GetValue("DehumidifierMaxHum");
         $minHum   = $this->GetValue("DehumidifierMinHum");
@@ -371,8 +371,12 @@ class BasementClimate extends IPSModuleStrict
     private function HandlePowerUpdate(float $currentPower): void
     {
         $plugId = $this->ReadPropertyInteger("ActuatorDehumidifierPlug");
-        if ($plugId == 0) return;
+        if ($plugId == 0) {
+            $this->SLog('WARNING', 'Aktor nicht konfiguriert', "Property-ID: ActuatorDehumidifierPlug");
+            return;
+        }
         
+        if (!IPS_VariableExists($plugId)) return;
         $plugStatus = GetValue($plugId);
         $threshold  = $this->ReadPropertyFloat("DehumidifierPowerThreshold");
         $timeLimit  = $this->ReadPropertyInteger("DehumidifierPowerTime");

@@ -49,6 +49,14 @@
             "type": "integer",
             "default": 0
         },
+        "DehumidifierMaxHum": {
+            "type": "float",
+            "default": 60
+        },
+        "DehumidifierMinHum": {
+            "type": "float",
+            "default": 55
+        },
         "DehumidifierPowerThreshold": {
             "type": "float",
             "default": 10

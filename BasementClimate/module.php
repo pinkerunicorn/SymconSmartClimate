@@ -82,22 +82,22 @@ class BasementClimate extends IPSModuleStrict
             'DECIMALPLACES' => 1
         ]);
         
-        $this->RegisterVariableFloat("DehumidifierMaxHum", "Einschaltschwelle (Max %)", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DehumidifierMaxHum'), [
-            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+        $sliderPresentation = [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_SLIDER,
             'ICON'          => 'Drops',
             'SUFFIX'        => ' %',
+            'MIN'           => 30,
+            'MAX'           => 90,
+            'STEP'          => 1,
             'DECIMALPLACES' => 1
-        ]);
+        ];
+
+        $this->RegisterVariableFloat("DehumidifierMaxHum", "Einschaltschwelle (Max %)", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DehumidifierMaxHum'), $sliderPresentation);
         $this->EnableAction("DehumidifierMaxHum");
         
         $this->RegisterVariableFloat("DehumidifierMinHum", "Ausschaltschwelle (Min %)", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DehumidifierMinHum'), [
-            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'          => 'Drops',
-            'SUFFIX'        => ' %',
-            'DECIMALPLACES' => 1
-        ]);
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DehumidifierMinHum'), $sliderPresentation);
         $this->EnableAction("DehumidifierMinHum");
         
         $this->RegisterVariableInteger("DehumidifierStatus", "Status Entfeuchter", "");
@@ -193,6 +193,23 @@ class BasementClimate extends IPSModuleStrict
         $this->SetupAlarmPresentation('AlarmTankFull',    'ALARM: Wassertank voll');
         $this->SetupAlarmPresentation('AlarmWindowClose', 'ALARM: Fenster schließen', 'OK', 0xFF6600);
         
+        // Initialisierung der Schwellwerte, falls ungefüllt (0.0)
+        $defaultMax = $this->ReadPropertyFloat("DehumidifierMaxHum");
+        if ($defaultMax == 0.0) {
+            $defaultMax = 60.0;
+        }
+        if ($this->GetValue("DehumidifierMaxHum") == 0.0) {
+            $this->SetValue("DehumidifierMaxHum", $defaultMax);
+        }
+
+        $defaultMin = $this->ReadPropertyFloat("DehumidifierMinHum");
+        if ($defaultMin == 0.0) {
+            $defaultMin = 55.0;
+        }
+        if ($this->GetValue("DehumidifierMinHum") == 0.0) {
+            $this->SetValue("DehumidifierMinHum", $defaultMin);
+        }
+
         $this->UpdateClimate();
     }
     

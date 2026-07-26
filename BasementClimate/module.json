@@ -80,6 +80,14 @@
         "SensorRadonLongTerm": {
             "type": "integer",
             "default": 0
+        },
+        "RadonWarningLevel": {
+            "type": "float",
+            "default": 100
+        },
+        "RadonAlarmLevel": {
+            "type": "float",
+            "default": 300
         }
     }
 }

@@ -20,6 +20,8 @@ class BasementClimate extends IPSModuleStrict
         
         $this->RegisterPropertyInteger("SensorRadonShortTerm", 0);
         $this->RegisterPropertyInteger("SensorRadonLongTerm", 0);
+        $this->RegisterPropertyFloat("RadonWarningLevel", 100.0);
+        $this->RegisterPropertyFloat("RadonAlarmLevel",   300.0);
         
         $this->RegisterPropertyInteger("ActuatorDehumidifierPlug", 0);
         $this->RegisterPropertyInteger("SensorDehumidifierPower", 0);
@@ -95,6 +97,25 @@ class BasementClimate extends IPSModuleStrict
             'ICON'          => 'Gauge',
             'SUFFIX'        => ' Bq/m³',
             'DECIMALPLACES' => 0
+        ]);
+        
+        $this->RegisterVariableInteger("RadonStatus", "Radon Status", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('RadonStatus'), [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Gauge'
+        ]);
+        if (!IPS_VariableProfileExists('SmartClimate.RadonStatus')) {
+            IPS_CreateVariableProfile('SmartClimate.RadonStatus', 1);
+            IPS_SetVariableProfileAssociation('SmartClimate.RadonStatus', 0, 'Gut (< Warnschwelle)',   'Ok',      0x00BB00);
+            IPS_SetVariableProfileAssociation('SmartClimate.RadonStatus', 1, 'Erhöht (< Alarmschwelle)', 'Warning', 0xFFAA00);
+            IPS_SetVariableProfileAssociation('SmartClimate.RadonStatus', 2, 'ALARM – Sofort lüften!',  'Alert',   0xFF0000);
+        }
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('RadonStatus'), 'SmartClimate.RadonStatus');
+        
+        $this->RegisterVariableString("RadonRecommendation", "Radon Empfehlung", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('RadonRecommendation'), [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Gauge'
         ]);
         
         $sliderPresentation = [
@@ -247,8 +268,10 @@ class BasementClimate extends IPSModuleStrict
             $this->HandlePowerUpdate($Data[0]);
         } elseif ($radonShortId > 0 && $SenderID == $radonShortId) {
             $this->SetValueIfChanged("RadonShortTerm", (float) $Data[0]);
+            $this->EvaluateRadon((float) $Data[0], $this->GetValue("RadonLongTerm"));
         } elseif ($radonLongId > 0 && $SenderID == $radonLongId) {
             $this->SetValueIfChanged("RadonLongTerm", (float) $Data[0]);
+            $this->EvaluateRadon($this->GetValue("RadonShortTerm"), (float) $Data[0]);
         } else {
             $this->UpdateClimate();
         }
@@ -442,13 +465,67 @@ class BasementClimate extends IPSModuleStrict
 
     private function SyncRadonValues(): void
     {
+        $short = null;
+        $long  = null;
+        
         $radonShortId = $this->ReadPropertyInteger("SensorRadonShortTerm");
         if ($radonShortId > 0 && IPS_VariableExists($radonShortId)) {
-            $this->SetValueIfChanged("RadonShortTerm", (float) GetValue($radonShortId));
+            $short = (float) GetValue($radonShortId);
+            $this->SetValueIfChanged("RadonShortTerm", $short);
         }
         $radonLongId = $this->ReadPropertyInteger("SensorRadonLongTerm");
         if ($radonLongId > 0 && IPS_VariableExists($radonLongId)) {
-            $this->SetValueIfChanged("RadonLongTerm", (float) GetValue($radonLongId));
+            $long = (float) GetValue($radonLongId);
+            $this->SetValueIfChanged("RadonLongTerm", $long);
+        }
+        
+        // Use cached values if sensor not configured
+        if ($short === null) $short = $this->GetValue("RadonShortTerm");
+        if ($long  === null) $long  = $this->GetValue("RadonLongTerm");
+        
+        $this->EvaluateRadon($short, $long);
+    }
+    
+    private function EvaluateRadon(float $short, float $long): void
+    {
+        $warnLevel  = $this->ReadPropertyFloat("RadonWarningLevel");
+        $alarmLevel = $this->ReadPropertyFloat("RadonAlarmLevel");
+        
+        // Bestimme den höchsten Wert (Kurzzeit kann kurzfristige Spitzen zeigen)
+        $maxValue = max($short, $long);
+        
+        if ($maxValue >= $alarmLevel) {
+            $status = 2;
+            $recommendation = sprintf(
+                'ALARM: Radon-Wert kritisch! Sofort und dauerhaft lüften! '
+                . 'Kurzzeit: %d Bq/m³, Langzeit: %d Bq/m³ '
+                . '(WHO-Grenzwert: %d Bq/m³). Bei dauerhaft erhöhten Werten Fachmann hinzuziehen.',
+                (int) $short, (int) $long, (int) $alarmLevel
+            );
+        } elseif ($maxValue >= $warnLevel) {
+            $status = 1;
+            $recommendation = sprintf(
+                'Erhöhte Radon-Werte. Regelmäßig lüften empfohlen! '
+                . 'Kurzzeit: %d Bq/m³, Langzeit: %d Bq/m³ '
+                . '(Warnschwelle: %d Bq/m³).',
+                (int) $short, (int) $long, (int) $warnLevel
+            );
+        } else {
+            $status = 0;
+            $recommendation = sprintf(
+                'Radon-Werte im unbedenklichen Bereich. '
+                . 'Kurzzeit: %d Bq/m³, Langzeit: %d Bq/m³.',
+                (int) $short, (int) $long
+            );
+        }
+        
+        $this->SetValueIfChanged("RadonStatus", $status);
+        $this->SetValueIfChanged("RadonRecommendation", $recommendation);
+        
+        if ($status === 2) {
+            $this->SLog('WARNING', 'Radon ALARM', sprintf('Kurzzeit: %d, Langzeit: %d Bq/m³', (int) $short, (int) $long));
+        } elseif ($status === 1) {
+            $this->SLog('INFO', 'Radon erhöht', sprintf('Kurzzeit: %d, Langzeit: %d Bq/m³', (int) $short, (int) $long));
         }
     }
 
@@ -607,6 +684,27 @@ class BasementClimate extends IPSModuleStrict
             "name": "VentilationCloseMargin",
             "caption": "Puffer (g/m³) für Schließ-Warnung",
             "digits": 1
+        },
+        {
+            "type": "Label",
+            "caption": "Radon-Schwellwerte\n\nHier legst du fest, ab welchem Wert das Modul warnt bzw. Alarm schlägt. WHO-Referenzwert: 300 Bq/m³. Empfohlene Warnschwelle: 100 Bq/m³."
+        },
+        {
+            "type": "RowLayout",
+            "items": [
+                {
+                    "type": "NumberSpinner",
+                    "name": "RadonWarningLevel",
+                    "caption": "Warnschwelle (Bq/m³)",
+                    "digits": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "RadonAlarmLevel",
+                    "caption": "Alarmschwelle (Bq/m³)",
+                    "digits": 0
+                }
+            ]
         }
     ]
 }

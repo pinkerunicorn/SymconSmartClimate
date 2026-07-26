@@ -72,6 +72,14 @@
         "VentilationThreshold": {
             "type": "float",
             "default": 0.5
+        },
+        "SensorRadonShortTerm": {
+            "type": "integer",
+            "default": 0
+        },
+        "SensorRadonLongTerm": {
+            "type": "integer",
+            "default": 0
         }
     }
 }

@@ -18,6 +18,9 @@ class BasementClimate extends IPSModuleStrict
         $this->RegisterPropertyInteger("SensorHumInside", 0);
         $this->RegisterPropertyString("SensorWindows", "[]");
         
+        $this->RegisterPropertyInteger("SensorRadonShortTerm", 0);
+        $this->RegisterPropertyInteger("SensorRadonLongTerm", 0);
+        
         $this->RegisterPropertyInteger("ActuatorDehumidifierPlug", 0);
         $this->RegisterPropertyInteger("SensorDehumidifierPower", 0);
         
@@ -77,6 +80,21 @@ class BasementClimate extends IPSModuleStrict
             'ICON'          => 'Drops',
             'SUFFIX'        => ' %',
             'DECIMALPLACES' => 1
+        ]);
+        
+        $this->RegisterVariableFloat("RadonShortTerm", "Radon Kurzzeit", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('RadonShortTerm'), [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Gauge',
+            'SUFFIX'        => ' Bq/m³',
+            'DECIMALPLACES' => 0
+        ]);
+        $this->RegisterVariableFloat("RadonLongTerm", "Radon Langzeit", "");
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('RadonLongTerm'), [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Gauge',
+            'SUFFIX'        => ' Bq/m³',
+            'DECIMALPLACES' => 0
         ]);
         
         $sliderPresentation = [
@@ -163,13 +181,22 @@ class BasementClimate extends IPSModuleStrict
         if ($ref_ActuatorRadiator2 > 1 && @IPS_ObjectExists($ref_ActuatorRadiator2)) {
             $this->RegisterReference($ref_ActuatorRadiator2);
         }
+        $ref_SensorRadonShortTerm = $this->ReadPropertyInteger('SensorRadonShortTerm');
+        if ($ref_SensorRadonShortTerm > 1 && @IPS_ObjectExists($ref_SensorRadonShortTerm)) {
+            $this->RegisterReference($ref_SensorRadonShortTerm);
+        }
+        $ref_SensorRadonLongTerm = $this->ReadPropertyInteger('SensorRadonLongTerm');
+        if ($ref_SensorRadonLongTerm > 1 && @IPS_ObjectExists($ref_SensorRadonLongTerm)) {
+            $this->RegisterReference($ref_SensorRadonLongTerm);
+        }
         $this->RegisterWindowReferences(); // Trait
         // ---------------------------------
 
         // Unregister old messages, then re-register (Trait)
         $this->UnregisterAllMessages();
         
-        $sensors = ["SensorTempOutside", "SensorHumOutside", "SensorTempInside", "SensorHumInside"];
+        $sensors = ["SensorTempOutside", "SensorHumOutside", "SensorTempInside", "SensorHumInside",
+                    "SensorRadonShortTerm", "SensorRadonLongTerm"];
         foreach ($sensors as $sensorName) {
             $id = $this->ReadPropertyInteger($sensorName);
             if ($id > 0 && IPS_VariableExists($id)) {
@@ -208,13 +235,20 @@ class BasementClimate extends IPSModuleStrict
         }
 
         $this->UpdateClimate();
+        $this->SyncRadonValues();
     }
     
     public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void{
-        $powerId = $this->ReadPropertyInteger("SensorDehumidifierPower");
+        $powerId          = $this->ReadPropertyInteger("SensorDehumidifierPower");
+        $radonShortId     = $this->ReadPropertyInteger("SensorRadonShortTerm");
+        $radonLongId      = $this->ReadPropertyInteger("SensorRadonLongTerm");
         
         if ($SenderID == $powerId) {
             $this->HandlePowerUpdate($Data[0]);
+        } elseif ($radonShortId > 0 && $SenderID == $radonShortId) {
+            $this->SetValueIfChanged("RadonShortTerm", (float) $Data[0]);
+        } elseif ($radonLongId > 0 && $SenderID == $radonLongId) {
+            $this->SetValueIfChanged("RadonLongTerm", (float) $Data[0]);
         } else {
             $this->UpdateClimate();
         }
@@ -406,6 +440,18 @@ class BasementClimate extends IPSModuleStrict
         $this->UpdateClimate();
     }
 
+    private function SyncRadonValues(): void
+    {
+        $radonShortId = $this->ReadPropertyInteger("SensorRadonShortTerm");
+        if ($radonShortId > 0 && IPS_VariableExists($radonShortId)) {
+            $this->SetValueIfChanged("RadonShortTerm", (float) GetValue($radonShortId));
+        }
+        $radonLongId = $this->ReadPropertyInteger("SensorRadonLongTerm");
+        if ($radonLongId > 0 && IPS_VariableExists($radonLongId)) {
+            $this->SetValueIfChanged("RadonLongTerm", (float) GetValue($radonLongId));
+        }
+    }
+
     public function GetConfigurationForm(): string
     {
         return <<<'EOT'
@@ -446,6 +492,25 @@ class BasementClimate extends IPSModuleStrict
                             "type": "SelectVariable",
                             "name": "SensorHumInside",
                             "caption": "Feuchtigkeit Keller"
+                        }
+                    ]
+                },
+                {
+                    "type": "Label",
+                    "caption": "Radon-Sensoren (Keller)\nHier wählst du die Variablen für Radon-Kurz- und Langzeitmessung (Bq/m³) aus:"
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "SelectVariable",
+                            "name": "SensorRadonShortTerm",
+                            "caption": "Radon Kurzzeit (Bq/m³)"
+                        },
+                        {
+                            "type": "SelectVariable",
+                            "name": "SensorRadonLongTerm",
+                            "caption": "Radon Langzeit (Bq/m³)"
                         }
                     ]
                 }

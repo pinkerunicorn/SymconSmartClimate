@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../ClimateCommon.php';
+require_once __DIR__ . '/../libs/Trait_SmartLog.php';
+require_once __DIR__ . '/../libs/Trait_ClimateCommon.php';
 
 class BasementClimate extends IPSModuleStrict
 {
-    use ClimateCommon;
+    use SmartLog_Trait;
+    use ClimateCommon_Trait;
 
     public function Create(): void{
         parent::Create();

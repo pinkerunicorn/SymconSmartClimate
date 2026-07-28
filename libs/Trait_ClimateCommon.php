@@ -9,29 +9,20 @@ declare(strict_types=1);
  * und GardenHouseClimate identisch genutzt werden.
  *
  * Verwendung in einer Modul-Klasse:
- *   require_once __DIR__ . '/../ClimateCommon.php';
- *   class MyClimate extends IPSModuleStrict { use ClimateCommon; ... }
+ *   require_once __DIR__ . '/../libs/Trait_SmartLog.php';
+ *   require_once __DIR__ . '/../libs/Trait_ClimateCommon.php';
+ *   class MyClimate extends IPSModuleStrict {
+ *       use SmartLog_Trait;
+ *       use ClimateCommon_Trait;
+ *       ...
+ *   }
  */
-trait ClimateCommon
+if (!trait_exists('ClimateCommon_Trait')) {
+trait ClimateCommon_Trait
 {
     // ─────────────────────────────────────────────────────────────────
-    // Logging
+    // Logging (LogMessage Override – nutzt SLog aus SmartLog_Trait)
     // ─────────────────────────────────────────────────────────────────
-
-    /**
-     * Schreibt eine Meldung unter dem Namespace 'SmartVillaKunterbunt'
-     * mit dem Klassennamen als Präfix (automatisch via static::class).
-     */
-    private function SLog(string $level, string $message, string $details = ''): void
-    {
-        $source = static::class;
-        $slogInstances = @IPS_GetInstanceListByModuleID('{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}');
-        if (is_array($slogInstances) && count($slogInstances) > 0) {
-            @SLOG_Log($slogInstances[0], $level, $source, $message, $details);
-        } else {
-            IPS_LogMessage('SmartVillaKunterbunt', $source . ': ' . $message);
-        }
-    }
 
     protected function LogMessage(string $Message, int $Type): bool
     {
@@ -236,7 +227,7 @@ trait ClimateCommon
         $v   = log10($dd / 6.1078);
         return ($b * $v) / ($a - $v);
     }
-    
+
     protected function CalculateAbsoluteHumidity(float $t, float $rh): float
     {
         $a = ($t < 0) ? 7.6 : 7.5;
@@ -245,4 +236,5 @@ trait ClimateCommon
         $dd  = $sdd * ($rh / 100);
         return 100000 * 18.016 / 8314.3 * $dd / ($t + 273.15);
     }
+}
 }

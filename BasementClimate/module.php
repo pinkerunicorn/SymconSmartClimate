@@ -281,9 +281,10 @@ class BasementClimate extends IPSModuleStrict
         ]);
 
         $dehumOptions = json_encode([
-            ['Value' => 0, 'Caption' => 'Aus', 'IconValue' => 'Sleep', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
-            ['Value' => 1, 'Caption' => 'Aktiv', 'IconValue' => 'Drops', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF],
-            ['Value' => 2, 'Caption' => 'Voll', 'IconValue' => 'Warning', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000]
+            ['Value' => 0, 'Caption' => 'Aus',          'IconValue' => 'Sleep',   'IconActive' => false, 'ColorActive' => false, 'ColorDisplay' => -1,       'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
+            ['Value' => 1, 'Caption' => 'Aktiv',        'IconValue' => 'Drops',   'IconActive' => true,  'ColorActive' => true,  'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF],
+            ['Value' => 2, 'Caption' => 'Fenster offen','IconValue' => 'Window',  'IconActive' => true,  'ColorActive' => true,  'ColorDisplay' => 0xFFCC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFCC00],
+            ['Value' => 3, 'Caption' => 'Tank voll!',   'IconValue' => 'Warning', 'IconActive' => true,  'ColorActive' => true,  'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000],
         ]);
         IPS_SetVariableCustomPresentation($this->GetIDForIdent('DehumidifierStatus'), [
             'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Drops', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $dehumOptions

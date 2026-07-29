@@ -65,112 +65,88 @@ class BasementClimate extends IPSModuleStrict
             'SUFFIX'        => ' °C',
             'DECIMALPLACES' => 1
         ]);
-        $this->RegisterVariableFloat("DewPointOutside", "Taupunkt Außen", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DewPointOutside'), [
+        $this->RegisterVariableFloat("DewPointOutside", "Taupunkt Außen", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops',
             'SUFFIX'        => ' °C',
             'DECIMALPLACES' => 1
         ]);
         
-        $this->RegisterVariableFloat("AbsHumInside", "Absolute Feuchte Keller", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('AbsHumInside'), [
+        $this->RegisterVariableFloat("AbsHumInside", "Absolute Feuchte Keller", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops',
             'SUFFIX'        => ' g/m³',
             'DECIMALPLACES' => 2
         ]);
-        $this->RegisterVariableFloat("AbsHumOutside", "Absolute Feuchte Außen", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('AbsHumOutside'), [
+        
+        $this->RegisterVariableFloat("AbsHumOutside", "Absolute Feuchte Außen", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops',
             'SUFFIX'        => ' g/m³',
             'DECIMALPLACES' => 2
         ]);
-        $this->RegisterVariableFloat("CurrentHumidity", "Aktuelle Luftfeuchtigkeit", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CurrentHumidity'), [
+        
+        $this->RegisterVariableFloat("CurrentHumidity", "Aktuelle Luftfeuchtigkeit", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops',
             'SUFFIX'        => ' %',
             'DECIMALPLACES' => 1
         ]);
         
-        $this->RegisterVariableFloat("RadonShortTerm", "Radon Kurzzeit", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('RadonShortTerm'), [
-            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'          => 'Gauge',
-            'SUFFIX'        => ' Bq/m³',
-            'DECIMALPLACES' => 0
-        ]);
-        $this->RegisterVariableFloat("RadonLongTerm", "Radon Langzeit", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('RadonLongTerm'), [
+        $this->RegisterVariableFloat("RadonShortTerm", "Radon Kurzzeit", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Gauge',
             'SUFFIX'        => ' Bq/m³',
             'DECIMALPLACES' => 0
         ]);
         
-        $this->RegisterVariableInteger("RadonStatus", "Radon Status", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('RadonStatus'), [
-            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Gauge'
+        $this->RegisterVariableFloat("RadonLongTerm", "Radon Langzeit", [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Gauge',
+            'SUFFIX'        => ' Bq/m³',
+            'DECIMALPLACES' => 0
         ]);
-        if (!IPS_VariableProfileExists('SmartClimate.RadonStatus')) {
-            IPS_CreateVariableProfile('SmartClimate.RadonStatus', 1);
-            IPS_SetVariableProfileAssociation('SmartClimate.RadonStatus', 0, 'Gut (< Warnschwelle)',   'Ok',      0x00BB00);
-            IPS_SetVariableProfileAssociation('SmartClimate.RadonStatus', 1, 'Erhöht (< Alarmschwelle)', 'Warning', 0xFFAA00);
-            IPS_SetVariableProfileAssociation('SmartClimate.RadonStatus', 2, 'ALARM – Sofort lüften!',  'Alert',   0xFF0000);
-        }
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('RadonStatus'), 'SmartClimate.RadonStatus');
         
-        $this->RegisterVariableString("RadonRecommendation", "Radon Empfehlung", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('RadonRecommendation'), [
+        $this->RegisterVariableInteger("RadonStatus", "Radon Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Gauge'
         ]);
         
-        // Gemeinsames Profil fuer CO2- und VOC-Status
-        if (!IPS_VariableProfileExists('SmartClimate.AirQualityStatus')) {
-            IPS_CreateVariableProfile('SmartClimate.AirQualityStatus', 1);
-            IPS_SetVariableProfileAssociation('SmartClimate.AirQualityStatus', 0, 'Gut',     'Ok',      0x00BB00);
-            IPS_SetVariableProfileAssociation('SmartClimate.AirQualityStatus', 1, 'Erhöht',  'Warning', 0xFFAA00);
-            IPS_SetVariableProfileAssociation('SmartClimate.AirQualityStatus', 2, 'Schlecht', 'Alert',   0xFF0000);
-        }
+        $this->RegisterVariableString("RadonRecommendation", "Radon Empfehlung", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Gauge'
+        ]);
         
-        $this->RegisterVariableFloat("CO2Value", "CO₂-Konzentration", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CO2Value'), [
+        $this->RegisterVariableFloat("CO2Value", "CO₂-Konzentration", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Climate',
             'SUFFIX'        => ' ppm',
             'DECIMALPLACES' => 0
         ]);
-        $this->RegisterVariableInteger("CO2Status", "CO₂ Status", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CO2Status'), [
-            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Climate'
-        ]);
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('CO2Status'), 'SmartClimate.AirQualityStatus');
-        $this->RegisterVariableString("CO2Recommendation", "CO₂ Empfehlung", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CO2Recommendation'), [
+        
+        $this->RegisterVariableInteger("CO2Status", "CO₂ Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Climate'
         ]);
         
-        $this->RegisterVariableFloat("VOCValue", "VOC-Konzentration", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VOCValue'), [
+        $this->RegisterVariableString("CO2Recommendation", "CO₂ Empfehlung", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Climate'
+        ]);
+        
+        $this->RegisterVariableFloat("VOCValue", "VOC-Konzentration", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Climate',
             'SUFFIX'        => ' µg/m³',
             'DECIMALPLACES' => 0
         ]);
-        $this->RegisterVariableInteger("VOCStatus", "VOC Status", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VOCStatus'), [
+        
+        $this->RegisterVariableInteger("VOCStatus", "VOC Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Climate'
         ]);
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('VOCStatus'), 'SmartClimate.AirQualityStatus');
-        $this->RegisterVariableString("VOCRecommendation", "VOC Empfehlung", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VOCRecommendation'), [
+        
+        $this->RegisterVariableString("VOCRecommendation", "VOC Empfehlung", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Climate'
         ]);
@@ -185,36 +161,21 @@ class BasementClimate extends IPSModuleStrict
             'DECIMALPLACES' => 1
         ];
 
-        $this->RegisterVariableFloat("DehumidifierMaxHum", "Einschaltschwelle (Max %)", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DehumidifierMaxHum'), $sliderPresentation);
+        $this->RegisterVariableFloat("DehumidifierMaxHum", "Einschaltschwelle (Max %)", $sliderPresentation);
         $this->EnableAction("DehumidifierMaxHum");
         
-        $this->RegisterVariableFloat("DehumidifierMinHum", "Ausschaltschwelle (Min %)", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DehumidifierMinHum'), $sliderPresentation);
+        $this->RegisterVariableFloat("DehumidifierMinHum", "Ausschaltschwelle (Min %)", $sliderPresentation);
         $this->EnableAction("DehumidifierMinHum");
         
-        $this->RegisterVariableInteger("DehumidifierStatus", "Status Entfeuchter", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DehumidifierStatus'), [
+        $this->RegisterVariableInteger("DehumidifierStatus", "Status Entfeuchter", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops'
         ]);
         
-        if (!IPS_VariableProfileExists('SmartClimate.DehumidifierStatus')) {
-            IPS_CreateVariableProfile('SmartClimate.DehumidifierStatus', 1);
-            IPS_SetVariableProfileAssociation('SmartClimate.DehumidifierStatus', 0, 'Aus', 'Sleep', 0x00FF00);
-            IPS_SetVariableProfileAssociation('SmartClimate.DehumidifierStatus', 1, 'Entfeuchten', 'Drops', 0x0000FF);
-            IPS_SetVariableProfileAssociation('SmartClimate.DehumidifierStatus', 2, 'Pausiert (Fenster offen)', 'Window', 0xFFFF00);
-            IPS_SetVariableProfileAssociation('SmartClimate.DehumidifierStatus', 3, 'Pausiert (Tank voll)', 'Warning', 0xFF0000);
-        }
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('DehumidifierStatus'), 'SmartClimate.DehumidifierStatus');
-        
-        // Alarm Variables (no legacy profiles — use CustomPresentation via Trait)
         $this->RegisterVariableBoolean("AlarmTankFull", "Alarm: Wassertank voll", "");
-        IPS_SetIcon($this->GetIDForIdent('AlarmTankFull'), 'Warning');
         $this->EnableAction("AlarmTankFull");
         
         $this->RegisterVariableBoolean("AlarmWindowClose", "Alarm: Fenster schließen", "");
-        IPS_SetIcon($this->GetIDForIdent('AlarmWindowClose'), 'Warning');
         $this->EnableAction("AlarmWindowClose");
         
         // Timers
@@ -297,13 +258,52 @@ class BasementClimate extends IPSModuleStrict
         }
         
         // Presentations (Symcon 8+)
-        // Presentations are now handled via IPS_SetVariableCustomPresentation in Create()
-        
-        // Alarm-Variablen via Trait (Switch mit Farben)
-        $this->SetupAlarmPresentation('AlarmTankFull',    'ALARM: Wassertank voll');
-        $this->SetupAlarmPresentation('AlarmWindowClose', 'ALARM: Fenster schließen', 'OK', 0xFF6600);
-        
-        // Initialisierung der Schwellwerte, falls ungefüllt (0.0)
+        $radonOptions = json_encode([
+            ['Value' => 0, 'Caption' => 'Gut', 'IconValue' => 'Ok', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
+            ['Value' => 1, 'Caption' => 'Mittel', 'IconValue' => 'Warning', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFFA500, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFA500],
+            ['Value' => 2, 'Caption' => 'Hoch', 'IconValue' => 'Alert', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000],
+            ['Value' => 3, 'Caption' => 'Sehr hoch', 'IconValue' => 'Alert', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xCC0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xCC0000]
+        ]);
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('RadonStatus'), [
+            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Gauge', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $radonOptions
+        ]);
+
+        $aqOptions = json_encode([
+            ['Value' => 0, 'Caption' => 'Gut', 'IconValue' => 'Ok', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
+            ['Value' => 1, 'Caption' => 'Mittel', 'IconValue' => 'Warning', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFFA500, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFA500],
+            ['Value' => 2, 'Caption' => 'Hoch', 'IconValue' => 'Alert', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000]
+        ]);
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CO2Status'), [
+            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Climate', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $aqOptions
+        ]);
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VOCStatus'), [
+            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Climate', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $aqOptions
+        ]);
+
+        $dehumOptions = json_encode([
+            ['Value' => 0, 'Caption' => 'Aus', 'IconValue' => 'Sleep', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
+            ['Value' => 1, 'Caption' => 'Aktiv', 'IconValue' => 'Drops', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF],
+            ['Value' => 2, 'Caption' => 'Voll', 'IconValue' => 'Warning', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000]
+        ]);
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DehumidifierStatus'), [
+            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Drops', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $dehumOptions
+        ]);
+
+        $ventRecOptions = json_encode([
+            ['Value' => false, 'Caption' => 'Nein', 'IconValue' => 'Wind', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
+            ['Value' => true, 'Caption' => 'Lüften empfohlen', 'IconValue' => 'Wind', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF]
+        ]);
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VentilationRecommendation'), [
+            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Wind', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $ventRecOptions
+        ]);
+
+        if (!IPS_VariableProfileExists('SM.Climate.Alarm')) {
+            IPS_CreateVariableProfile('SM.Climate.Alarm', 0);
+            IPS_SetVariableProfileAssociation('SM.Climate.Alarm', 0, 'OK', 'Ok', 0x00CC00);
+            IPS_SetVariableProfileAssociation('SM.Climate.Alarm', 1, 'Alarm!', 'Alert', 0xFF0000);
+        }
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmTankFull'), 'SM.Climate.Alarm');
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmWindowClose'), 'SM.Climate.Alarm');
         $defaultMax = $this->ReadPropertyFloat("DehumidifierMaxHum");
         if ($defaultMax == 0.0) {
             $defaultMax = 60.0;

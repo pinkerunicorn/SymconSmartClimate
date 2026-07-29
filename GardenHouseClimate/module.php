@@ -37,8 +37,7 @@ class GardenHouseClimate extends IPSModuleStrict
         $this->EnableAction("WinterMode");
         $this->SetValue("WinterMode", true); // Default to true
         
-        $this->RegisterVariableFloat("TargetTemperature", "Zieltemperatur Frostschutz", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('TargetTemperature'), [
+        $this->RegisterVariableFloat("TargetTemperature", "Zieltemperatur Frostschutz", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Temperature',
             'SUFFIX'        => ' °C',
@@ -46,31 +45,19 @@ class GardenHouseClimate extends IPSModuleStrict
         ]);
         $this->EnableAction("TargetTemperature");
         
-        $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", "");
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('HeaterStatus'), [
+        $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Information'
         ]);
         
-        if (!IPS_VariableProfileExists('SmartClimate.HeaterStatus')) {
-            IPS_CreateVariableProfile('SmartClimate.HeaterStatus', 1);
-            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 0, 'Aus', 'Sleep', 0x00FF00);
-            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 1, 'Heizen', 'Flame', 0xFF0000);
-            IPS_SetVariableProfileAssociation('SmartClimate.HeaterStatus', 2, 'Pausiert (Fenster offen)', 'Window', 0xFFFF00);
-        }
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('HeaterStatus'), 'SmartClimate.HeaterStatus');
-        
         // Alarms (no legacy profiles — use CustomPresentation via Trait)
         $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", "");
-        IPS_SetIcon($this->GetIDForIdent('AlarmHeaterDefect'), 'Warning');
         $this->EnableAction("AlarmHeaterDefect");
         
         $this->RegisterVariableBoolean("AlarmFrost", "Alarm: Kritischer Frost", "");
-        IPS_SetIcon($this->GetIDForIdent('AlarmFrost'), 'Warning');
         $this->EnableAction("AlarmFrost");
         
         $this->RegisterVariableBoolean("AlarmWindowOpen", "Alarm: Fenster offen (Winter)", "");
-        IPS_SetIcon($this->GetIDForIdent('AlarmWindowOpen'), 'Warning');
         $this->EnableAction("AlarmWindowOpen");
         
         // Timers
@@ -109,10 +96,23 @@ class GardenHouseClimate extends IPSModuleStrict
             'ICON'         => 'Gear'
         ]);
 
-        // Alarm-Variablen via Trait (Switch mit Farben)
-        $this->SetupAlarmPresentation('AlarmHeaterDefect', 'ALARM: Heizung defekt');
-        $this->SetupAlarmPresentation('AlarmFrost',        'ALARM: Kritischer Frost');
-        $this->SetupAlarmPresentation('AlarmWindowOpen',   'ALARM: Fenster offen (Winter)', 'OK', 0xFF6600);
+        $heaterOptions = json_encode([
+            ['Value' => 0, 'Caption' => 'Aus', 'IconValue' => 'Sleep', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
+            ['Value' => 1, 'Caption' => 'Heizt', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF6600, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF6600],
+            ['Value' => 2, 'Caption' => 'Fehler', 'IconValue' => 'Alert', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000]
+        ]);
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('HeaterStatus'), [
+            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Information', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $heaterOptions
+        ]);
+
+        if (!IPS_VariableProfileExists('SM.Climate.Alarm')) {
+            IPS_CreateVariableProfile('SM.Climate.Alarm', 0);
+            IPS_SetVariableProfileAssociation('SM.Climate.Alarm', 0, 'OK', 'Ok', 0x00CC00);
+            IPS_SetVariableProfileAssociation('SM.Climate.Alarm', 1, 'Alarm!', 'Alert', 0xFF0000);
+        }
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmHeaterDefect'), 'SM.Climate.Alarm');
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmFrost'), 'SM.Climate.Alarm');
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmWindowOpen'), 'SM.Climate.Alarm');
 
         // Messages neu registrieren (Trait)
         $this->UnregisterAllMessages();

@@ -497,15 +497,15 @@ class BasementClimate extends IPSModuleStrict
         }
         
         if ($rad1 > 0 && IPS_VariableExists($rad1) && GetValue($rad1) != $targetTemp) {
-            $this->SLog('INFO', 'Heizkörper Zieltemperatur gesetzt', "Radiator: $rad1 | Ziel: $targetTemp°C | Feuchte: $humIn%");
+            $this->SLog('INFO', 'Heizkörper Zieltemperatur gesetzt', "Radiator: $rad1 | Ziel: {$targetTemp}°C | Feuchte: {$humIn}%");
             if (!@RequestAction($rad1, $targetTemp)) {
-                $this->SLog('WARNING', 'Heizungsbefehl fehlgeschlagen', "Radiator ID: $rad1 | Ziel: $targetTemp°C");
+                $this->SLog('WARNING', 'Heizungsbefehl fehlgeschlagen', "Radiator ID: $rad1 | Ziel: {$targetTemp}°C");
             }
         }
         if ($rad2 > 0 && IPS_VariableExists($rad2) && GetValue($rad2) != $targetTemp) {
-            $this->SLog('INFO', 'Heizkörper Zieltemperatur gesetzt', "Radiator: $rad2 | Ziel: $targetTemp°C | Feuchte: $humIn%");
+            $this->SLog('INFO', 'Heizkörper Zieltemperatur gesetzt', "Radiator: $rad2 | Ziel: {$targetTemp}°C | Feuchte: {$humIn}%");
             if (!@RequestAction($rad2, $targetTemp)) {
-                $this->SLog('WARNING', 'Heizungsbefehl fehlgeschlagen', "Radiator ID: $rad2 | Ziel: $targetTemp°C");
+                $this->SLog('WARNING', 'Heizungsbefehl fehlgeschlagen', "Radiator ID: $rad2 | Ziel: {$targetTemp}°C");
             }
         }
     }

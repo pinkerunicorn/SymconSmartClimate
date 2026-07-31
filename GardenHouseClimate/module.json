@@ -2,7 +2,7 @@
     "id": "{72F85A11-E649-43C1-B753-159D7133CBAF}",
     "name": "GardenHouseClimate",
     "type": 3,
-    "vendor": "Florian Graßinger",
+    "vendor": "Florian Gra\u00dfinger",
     "aliases": [
         "Garden House Climate"
     ],
@@ -10,8 +10,8 @@
     "childRequirements": [],
     "implemented": [],
     "prefix": "GHC",
-    "url": "https://github.com/pinkerunicorn/",
-    "author": "Florian Graßinger",
+    "url": "https://github.com/pinkerunicorn/SymconSmartClimate/tree/main/GardenHouseClimate",
+    "author": "Florian Gra\u00dfinger",
     "properties": {
         "SensorTempInside": {
             "type": "integer",

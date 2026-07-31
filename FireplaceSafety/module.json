@@ -2,7 +2,7 @@
     "id": "{A1B2C3D4-E5F6-4789-A123-456789ABCDEF}",
     "name": "FireplaceSafety",
     "type": 3,
-    "vendor": "Florian Graßinger",
+    "vendor": "Florian Gra\u00dfinger",
     "aliases": [
         "Fireplace Safety",
         "Kamin Sicherheit"
@@ -11,8 +11,8 @@
     "childRequirements": [],
     "implemented": [],
     "prefix": "FS",
-    "author": "Florian Graßinger",
-    "url": "https://github.com/pinkerunicorn/",
+    "author": "Florian Gra\u00dfinger",
+    "url": "https://github.com/pinkerunicorn/SymconSmartClimate/tree/main/FireplaceSafety",
     "properties": {
         "SensorOvenTemp": {
             "type": "integer",
@@ -40,15 +40,15 @@
         },
         "OvenDeltaTemp": {
             "type": "float",
-            "default": 15.0
+            "default": 15
         },
         "PeakDropThreshold": {
             "type": "float",
-            "default": 5.0
+            "default": 5
         },
         "MaxRoomTemp": {
             "type": "float",
-            "default": 24.0
+            "default": 24
         },
         "DoorAlarmTime": {
             "type": "integer",

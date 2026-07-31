@@ -20,10 +20,10 @@ class SmartWaterMonitor extends IPSModuleStrict
         $this->SetReceiveDataFilter('.*' . preg_quote($this->ReadPropertyString('MQTTBaseTopic')) . '.*');
 
         // Variables
-        $this->RegisterVariableBoolean("Online", "Online", [
+        $this->RegisterVariableBoolean("Online", "Gerätestatus", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Network'
-        ], 100);
+        ], 900);
         $this->RegisterVariableBoolean("LeakAlarm", "Leckage-Alarm", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Drops'

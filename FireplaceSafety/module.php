@@ -34,43 +34,43 @@ class FireplaceSafety extends IPSModuleStrict
             'ICON' => 'Temperature',
             'SUFFIX' => ' °C',
             'DECIMALPLACES' => 1
-        ]);
+        ], 1);
         
         $this->RegisterVariableBoolean("CurrentDoorStatus", "Status Ofentür", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON' => 'Window'
-        ]);
+        ], 2);
         
         $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Flame'
-        ]);
+        ], 3);
         
         $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Information'
-        ]);
+        ], 4);
         
         $this->RegisterVariableBoolean("AlarmOvenDoor", "Alarm Ofentür", [
             'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
             'ICON' => 'Warning'
-        ]);
+        ], 200);
         $this->EnableAction("AlarmOvenDoor"); // Quittierbar per Webfront
 
         $this->RegisterVariableFloat("OvenPeakTemp", "Letzte Spitzen-Temperatur", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON' => 'Temperature',
             'SUFFIX' => ' °C'
-        ]);
+        ], 5);
         
         $this->RegisterVariableBoolean("WoodRefillNeeded", "Bitte Holz nachlegen", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON' => 'Flame'
-        ]);
+        ], 100);
         $this->RegisterVariableInteger("FiredCount", "Anzahl Angefeuert", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON' => 'Flame'
-        ]);
+        ], 101);
 
         // --- Timers ---
         $this->RegisterTimer("DoorAlarmTimer", 0, 'FS_TriggerDoorAlarm($_IPS[\'TARGET\']);');
@@ -78,6 +78,12 @@ class FireplaceSafety extends IPSModuleStrict
 
     public function ApplyChanges(): void{
         parent::ApplyChanges();
+        $sensorID = $this->ReadPropertyInteger('SensorOvenTemp');
+        if ($sensorID <= 0) {
+            $this->SetStatus(104);
+            return;
+        }
+
         
         // Ensure existing instances get updated presentations
         if (function_exists('IPS_SetVariableCustomPresentation')) {
@@ -327,6 +333,9 @@ class FireplaceSafety extends IPSModuleStrict
     {
         return <<<'EOT'
 {
+    "status": [
+        { "code": 104, "icon": "inactive", "caption": "Sensor nicht konfiguriert" }
+    ],
     "elements": [
         {
             "type": "ExpansionPanel",

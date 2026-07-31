@@ -21,54 +21,54 @@ class SmartLawnAI extends IPSModuleStrict {
         parent::Create();
 
         // Globale Defaults (jetzt als Variablen statt Properties)
-        $this->RegisterVariableFloat('DefaultZielFeuchte', '🎯 Bewässerungs-Ziel-Feuchte', [
+        $this->RegisterVariableFloat("DefaultZielFeuchte", "🎯 Bewässerungs-Ziel-Feuchte", [
             'PRESENTATION' => VARIABLE_PRESENTATION_SLIDER,
             'ICON' => 'Drops',
             'SUFFIX' => '%',
             'MIN' => 0,
             'MAX' => 100,
             'STEP' => 5
-        ], 10);
-        $this->RegisterVariableFloat('DefaultStartSchwellwert', 'Bewässerungs-Trigger-Feuchte', [
+        ], 200);
+        $this->RegisterVariableFloat("DefaultStartSchwellwert", "Bewässerungs-Trigger-Feuchte", [
             'PRESENTATION' => VARIABLE_PRESENTATION_SLIDER,
             'ICON' => 'Drops',
             'SUFFIX' => '%',
             'MIN' => 0,
             'MAX' => 100,
             'STEP' => 5
-        ], 11);
-        $this->RegisterVariableInteger('SickerpauseMinuten', '⏳ Sickerpause', [
+        ], 201);
+        $this->RegisterVariableInteger("SickerpauseMinuten", "⏳ Sickerpause", [
             'PRESENTATION' => VARIABLE_PRESENTATION_SLIDER,
             'ICON' => 'Clock',
             'SUFFIX' => 'Min',
             'MIN' => 0,
             'MAX' => 180,
             'STEP' => 5
-        ], 12);
-        $this->RegisterVariableInteger('GlobalMaxDuration', '⏱ Maximale Bewässerungsdauer', [
+        ], 202);
+        $this->RegisterVariableInteger("GlobalMaxDuration", "⏱ Maximale Bewässerungsdauer", [
             'PRESENTATION' => VARIABLE_PRESENTATION_SLIDER,
             'ICON' => 'Clock',
             'SUFFIX' => 'Min',
             'MIN' => 0,
             'MAX' => 180,
             'STEP' => 5
-        ], 13);
+        ], 203);
 
         // Summenstatus Variable (fürs Webfront)
-        $this->RegisterVariableString('SummaryStatus', '🤖 Aktueller Status', ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information'], 0);
-        $this->RegisterVariableString('VestaboardMessage', 'Vestaboard Nachricht', ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information'], 1);
-        $this->RegisterVariableString('LastGeminiResponse', '🧠 Letzte KI-Antwort', ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information'], 2);
-        $this->RegisterVariableString('IrrigationLog', '📝 Bewässerungs-Log', ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Drop'], 3);
+        $this->RegisterVariableString("SummaryStatus", "🤖 Aktueller Status", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information'], 1);
+        $this->RegisterVariableString("VestaboardMessage", "Vestaboard Nachricht", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information'], 100);
+        $this->RegisterVariableString("LastGeminiResponse", "🧠 Letzte KI-Antwort", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information'], 101);
+        $this->RegisterVariableString("IrrigationLog", "📝 Bewässerungs-Log", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Drop'], 102);
 
         // Status/Trigger Variablen
-        $this->RegisterVariableBoolean('AutomaticActive', '⚙ Automatik aktiv', [
+        $this->RegisterVariableBoolean("AutomaticActive", "⚙ Automatik aktiv", [
             'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
             'ICON' => 'Gear'
-        ], 0);
-        $this->RegisterVariableBoolean('ForceStart', '▶ Manuell Starten', [
+        ], 204);
+        $this->RegisterVariableBoolean("ForceStart", "▶ Manuell Starten", [
             'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
             'ICON' => 'Play'
-        ], 0);
+        ], 205);
 
 
         // Gemini AI Konfiguration: API-Key und Modell werden jetzt zentral
@@ -92,35 +92,35 @@ class SmartLawnAI extends IPSModuleStrict {
         // Water Monitor
         $this->RegisterPropertyInteger('WaterMonitorInstanceID', 0);
         
-        $this->RegisterVariableBoolean('WateringActive', 'Bewässerung läuft', ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Drop'], 4);
+        $this->RegisterVariableBoolean("WateringActive", "Bewässerung läuft", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Drop'], 2);
 
         // Wasserverbrauch-Variablen
-        $this->RegisterVariableFloat('WaterLastSession', 'Letzte Beregnung', [
+        $this->RegisterVariableFloat("WaterLastSession", "Letzte Beregnung", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX' => ' L',
             'ICON' => 'Drops'
-        ], 20);
-        $this->RegisterVariableFloat('WaterToday',       'Heute',            [
+        ], 3);
+        $this->RegisterVariableFloat("WaterToday", "Heute",            [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX' => ' L',
             'ICON' => 'Drops'
-        ], 21);
-        $this->RegisterVariableFloat('WaterThisWeek',    'Diese Woche',      [
+        ], 4);
+        $this->RegisterVariableFloat("WaterThisWeek", "Diese Woche",      [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX' => ' L',
             'ICON' => 'Drops'
-        ], 22);
-        $this->RegisterVariableFloat('WaterThisMonth',   'Dieser Monat',     [
+        ], 5);
+        $this->RegisterVariableFloat("WaterThisMonth", "Dieser Monat",     [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX' => ' L',
             'ICON' => 'Drops'
-        ], 23);
+        ], 6);
         
         $this->SetVisualizationType(1);
 
         // Wetter/Regen
-        $this->RegisterVariableFloat('ForecastRainToday', '🌧 Regen Heute', ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Cloud'], 5);
-        $this->RegisterVariableFloat('ForecastRainTomorrow', '🌧 Regen Morgen', ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Cloud'], 6);
+        $this->RegisterVariableFloat("ForecastRainToday", "🌧 Regen Heute", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Cloud'], 7);
+        $this->RegisterVariableFloat("ForecastRainTomorrow", "🌧 Regen Morgen", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Cloud'], 8);
 
         // Zonen (Hardware)
         $this->RegisterPropertyString('Zones', '[]');
@@ -165,6 +165,12 @@ class SmartLawnAI extends IPSModuleStrict {
 
     public function ApplyChanges(): void {
         parent::ApplyChanges();
+        $sensorID = $this->ReadPropertyInteger('GlobalAirTempID');
+        if ($sensorID <= 0) {
+            $this->SetStatus(104);
+            return;
+        }
+
         // --- Auto-generated References ---
         foreach ($this->GetReferenceList() as $refID) {
             $this->UnregisterReference($refID);
@@ -370,6 +376,9 @@ class SmartLawnAI extends IPSModuleStrict {
     {
         return <<<'EOT'
 {
+    "status": [
+        { "code": 104, "icon": "inactive", "caption": "Sensor nicht konfiguriert" }
+    ],
     "elements": [
         {
             "type": "Label",

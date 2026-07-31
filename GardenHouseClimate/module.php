@@ -32,7 +32,7 @@ class GardenHouseClimate extends IPSModuleStrict
         // Variables
         $this->RegisterVariableBoolean("WinterMode", "Winterbetrieb", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION
-        ]);
+        ], 200);
         IPS_SetIcon($this->GetIDForIdent('WinterMode'), 'Gear');
         $this->EnableAction("WinterMode");
         $this->SetValue("WinterMode", true); // Default to true
@@ -42,22 +42,22 @@ class GardenHouseClimate extends IPSModuleStrict
             'ICON'          => 'Temperature',
             'SUFFIX'        => ' °C',
             'DECIMALPLACES' => 1
-        ]);
+        ], 201);
         $this->EnableAction("TargetTemperature");
         
         $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Information'
-        ]);
+        ], 1);
         
         // Alarms (no legacy profiles — use CustomPresentation via Trait)
-        $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", "");
+        $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", "", 202);
         $this->EnableAction("AlarmHeaterDefect");
         
-        $this->RegisterVariableBoolean("AlarmFrost", "Alarm: Kritischer Frost", "");
+        $this->RegisterVariableBoolean("AlarmFrost", "Alarm: Kritischer Frost", "", 203);
         $this->EnableAction("AlarmFrost");
         
-        $this->RegisterVariableBoolean("AlarmWindowOpen", "Alarm: Fenster offen (Winter)", "");
+        $this->RegisterVariableBoolean("AlarmWindowOpen", "Alarm: Fenster offen (Winter)", "", 204);
         $this->EnableAction("AlarmWindowOpen");
         
         // Timers
@@ -67,6 +67,12 @@ class GardenHouseClimate extends IPSModuleStrict
 
     public function ApplyChanges(): void{
         parent::ApplyChanges();
+        $sensorID = $this->ReadPropertyInteger('SensorTempInside');
+        if ($sensorID <= 0) {
+            $this->SetStatus(104);
+            return;
+        }
+
         // --- Auto-generated References ---
         foreach ($this->GetReferenceList() as $refID) {
             $this->UnregisterReference($refID);
@@ -306,6 +312,9 @@ class GardenHouseClimate extends IPSModuleStrict
     {
         return <<<'EOT'
 {
+    "status": [
+        { "code": 104, "icon": "inactive", "caption": "Sensor nicht konfiguriert" }
+    ],
     "elements": [
         {
             "type": "ExpansionPanel",

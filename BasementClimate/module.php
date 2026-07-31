@@ -53,103 +53,103 @@ class BasementClimate extends IPSModuleStrict
         $this->RegisterVariableBoolean("VentilationRecommendation", "Lüften empfohlen!", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Wind'
-        ]);
+        ], 100);
         $this->RegisterVariableString("VentilationDetails", "Hinweis", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Wind'
-        ]);
+        ], 101);
         
         $this->RegisterVariableFloat("DewPointInside", "Taupunkt Keller", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops',
             'SUFFIX'        => ' °C',
             'DECIMALPLACES' => 1
-        ]);
+        ], 1);
         $this->RegisterVariableFloat("DewPointOutside", "Taupunkt Außen", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops',
             'SUFFIX'        => ' °C',
             'DECIMALPLACES' => 1
-        ]);
+        ], 2);
         
         $this->RegisterVariableFloat("AbsHumInside", "Absolute Feuchte Keller", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops',
             'SUFFIX'        => ' g/m³',
             'DECIMALPLACES' => 2
-        ]);
+        ], 3);
         
         $this->RegisterVariableFloat("AbsHumOutside", "Absolute Feuchte Außen", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops',
             'SUFFIX'        => ' g/m³',
             'DECIMALPLACES' => 2
-        ]);
+        ], 4);
         
         $this->RegisterVariableFloat("CurrentHumidity", "Aktuelle Luftfeuchtigkeit", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops',
             'SUFFIX'        => ' %',
             'DECIMALPLACES' => 1
-        ]);
+        ], 5);
         
         $this->RegisterVariableFloat("RadonShortTerm", "Radon Kurzzeit", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Gauge',
             'SUFFIX'        => ' Bq/m³',
             'DECIMALPLACES' => 0
-        ]);
+        ], 6);
         
         $this->RegisterVariableFloat("RadonLongTerm", "Radon Langzeit", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Gauge',
             'SUFFIX'        => ' Bq/m³',
             'DECIMALPLACES' => 0
-        ]);
+        ], 7);
         
         $this->RegisterVariableInteger("RadonStatus", "Radon Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Gauge'
-        ]);
+        ], 8);
         
         $this->RegisterVariableString("RadonRecommendation", "Radon Empfehlung", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Gauge'
-        ]);
+        ], 102);
         
         $this->RegisterVariableFloat("CO2Value", "CO₂-Konzentration", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Climate',
             'SUFFIX'        => ' ppm',
             'DECIMALPLACES' => 0
-        ]);
+        ], 9);
         
         $this->RegisterVariableInteger("CO2Status", "CO₂ Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Climate'
-        ]);
+        ], 10);
         
         $this->RegisterVariableString("CO2Recommendation", "CO₂ Empfehlung", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Climate'
-        ]);
+        ], 103);
         
         $this->RegisterVariableFloat("VOCValue", "VOC-Konzentration", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Climate',
             'SUFFIX'        => ' µg/m³',
             'DECIMALPLACES' => 0
-        ]);
+        ], 11);
         
         $this->RegisterVariableInteger("VOCStatus", "VOC Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Climate'
-        ]);
+        ], 12);
         
         $this->RegisterVariableString("VOCRecommendation", "VOC Empfehlung", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Climate'
-        ]);
+        ], 104);
         
         $sliderPresentation = [
             'PRESENTATION'  => VARIABLE_PRESENTATION_SLIDER,
@@ -161,21 +161,21 @@ class BasementClimate extends IPSModuleStrict
             'DECIMALPLACES' => 1
         ];
 
-        $this->RegisterVariableFloat("DehumidifierMaxHum", "Einschaltschwelle (Max %)", $sliderPresentation);
+        $this->RegisterVariableFloat("DehumidifierMaxHum", "Einschaltschwelle (Max %)", $sliderPresentation, 200);
         $this->EnableAction("DehumidifierMaxHum");
         
-        $this->RegisterVariableFloat("DehumidifierMinHum", "Ausschaltschwelle (Min %)", $sliderPresentation);
+        $this->RegisterVariableFloat("DehumidifierMinHum", "Ausschaltschwelle (Min %)", $sliderPresentation, 201);
         $this->EnableAction("DehumidifierMinHum");
         
         $this->RegisterVariableInteger("DehumidifierStatus", "Status Entfeuchter", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops'
-        ]);
+        ], 13);
         
-        $this->RegisterVariableBoolean("AlarmTankFull", "Alarm: Wassertank voll", "");
+        $this->RegisterVariableBoolean("AlarmTankFull", "Alarm: Wassertank voll", "", 202);
         $this->EnableAction("AlarmTankFull");
         
-        $this->RegisterVariableBoolean("AlarmWindowClose", "Alarm: Fenster schließen", "");
+        $this->RegisterVariableBoolean("AlarmWindowClose", "Alarm: Fenster schließen", "", 203);
         $this->EnableAction("AlarmWindowClose");
         
         // Timers
@@ -184,6 +184,12 @@ class BasementClimate extends IPSModuleStrict
 
     public function ApplyChanges(): void{
         parent::ApplyChanges();
+        $sensorID = $this->ReadPropertyInteger('SensorTempInside');
+        if ($sensorID <= 0) {
+            $this->SetStatus(104);
+            return;
+        }
+
         // --- Auto-generated References ---
         foreach ($this->GetReferenceList() as $refID) {
             $this->UnregisterReference($refID);
@@ -692,6 +698,9 @@ class BasementClimate extends IPSModuleStrict
     {
         return <<<'EOT'
 {
+    "status": [
+        { "code": 104, "icon": "inactive", "caption": "Sensor nicht konfiguriert" }
+    ],
     "elements": [
         {
             "type": "ExpansionPanel",

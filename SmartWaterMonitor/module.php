@@ -20,33 +20,33 @@ class SmartWaterMonitor extends IPSModuleStrict
         $this->SetReceiveDataFilter('.*' . preg_quote($this->ReadPropertyString('MQTTBaseTopic')) . '.*');
 
         // Variables
-        $this->RegisterVariableBoolean('Online', 'Online', [
+        $this->RegisterVariableBoolean("Online", "Online", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Network'
-        ]);
-        $this->RegisterVariableBoolean('LeakAlarm', 'Leckage-Alarm', [
+        ], 100);
+        $this->RegisterVariableBoolean("LeakAlarm", "Leckage-Alarm", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Drops'
-        ]);
-        $this->RegisterVariableBoolean('WaterRunning', 'Wasser fließt', [
+        ], 101);
+        $this->RegisterVariableBoolean("WaterRunning", "Wasser fließt", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Drops'
-        ]);
-        $this->RegisterVariableFloat('FlowRate', 'Aktueller Durchfluss', [
+        ], 1);
+        $this->RegisterVariableFloat("FlowRate", "Aktueller Durchfluss", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX'       => ' l/min',
             'ICON'         => 'Speedo'
-        ]);
-        $this->RegisterVariableFloat('TotalConsumption', 'Gesamtverbrauch', [
+        ], 2);
+        $this->RegisterVariableFloat("TotalConsumption", "Gesamtverbrauch", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX'       => ' m³',
             'ICON'         => 'Drops'
-        ]);
-        $this->RegisterVariableFloat('TotalConsumptionLiter', 'Gesamtverbrauch (Liter)', [
+        ], 3);
+        $this->RegisterVariableFloat("TotalConsumptionLiter", "Gesamtverbrauch (Liter)", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX'       => ' l',
             'ICON'         => 'Drops'
-        ]);
+        ], 4);
 
         // Variables are read-only
 
@@ -61,6 +61,12 @@ class SmartWaterMonitor extends IPSModuleStrict
     {
         // Never delete this line!
         parent::ApplyChanges();
+        $topic = $this->ReadPropertyString('MQTTBaseTopic');
+        if ($topic == '') {
+            $this->SetStatus(104);
+            return;
+        }
+
 
         // Register MQTT Filter
         $topic = $this->ReadPropertyString('MQTTBaseTopic');

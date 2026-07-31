@@ -96,14 +96,14 @@ class GardenHouseClimate extends IPSModuleStrict
             'ICON'         => 'Gear'
         ]);
 
-        $heaterOptions = json_encode([
-            ['Value' => 0, 'Caption' => 'Aus', 'IconValue' => 'Sleep', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
-            ['Value' => 1, 'Caption' => 'Heizt', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF6600, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF6600],
-            ['Value' => 2, 'Caption' => 'Fehler', 'IconValue' => 'Alert', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('HeaterStatus'), [
-            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Information', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $heaterOptions
-        ]);
+        
+        if (!IPS_VariableProfileExists('GHC.HeaterStatus')) {
+            IPS_CreateVariableProfile('GHC.HeaterStatus', 1);
+        }
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('HeaterStatus'), 'GHC.HeaterStatus');
+        IPS_SetVariableProfileAssociation('GHC.HeaterStatus', 0, 'Aus', 'Sleep', -1);
+        IPS_SetVariableProfileAssociation('GHC.HeaterStatus', 1, 'Heizt', 'Flame', 0xFF6600);
+        IPS_SetVariableProfileAssociation('GHC.HeaterStatus', 2, 'Fehler', 'Alert', 0xFF0000);
 
         if (!IPS_VariableProfileExists('SM.Climate.Alarm')) {
             IPS_CreateVariableProfile('SM.Climate.Alarm', 0);

@@ -258,37 +258,42 @@ class BasementClimate extends IPSModuleStrict
         }
         
         // Presentations (Symcon 8+)
-        $radonOptions = json_encode([
-            ['Value' => 0, 'Caption' => 'Gut', 'IconValue' => 'Ok', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
-            ['Value' => 1, 'Caption' => 'Mittel', 'IconValue' => 'Warning', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFFA500, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFA500],
-            ['Value' => 2, 'Caption' => 'Hoch', 'IconValue' => 'Alert', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000],
-            ['Value' => 3, 'Caption' => 'Sehr hoch', 'IconValue' => 'Alert', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xCC0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xCC0000]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('RadonStatus'), [
-            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Gauge', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $radonOptions
-        ]);
+        
+        if (!IPS_VariableProfileExists('BC.RadonStatus')) {
+            IPS_CreateVariableProfile('BC.RadonStatus', 1);
+        }
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('RadonStatus'), 'BC.RadonStatus');
+        IPS_SetVariableProfileAssociation('BC.RadonStatus', 0, 'Gut', 'Ok', 0x00CC00);
+        IPS_SetVariableProfileAssociation('BC.RadonStatus', 1, 'Mittel', 'Warning', 0xFFA500);
+        IPS_SetVariableProfileAssociation('BC.RadonStatus', 2, 'Hoch', 'Alert', 0xFF0000);
+        IPS_SetVariableProfileAssociation('BC.RadonStatus', 3, 'Sehr hoch', 'Alert', 0xCC0000);
 
-        $aqOptions = json_encode([
-            ['Value' => 0, 'Caption' => 'Gut', 'IconValue' => 'Ok', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
-            ['Value' => 1, 'Caption' => 'Mittel', 'IconValue' => 'Warning', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFFA500, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFA500],
-            ['Value' => 2, 'Caption' => 'Hoch', 'IconValue' => 'Alert', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CO2Status'), [
-            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Climate', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $aqOptions
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VOCStatus'), [
-            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Climate', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $aqOptions
-        ]);
+        
+        if (!IPS_VariableProfileExists('BC.CO2Status')) {
+            IPS_CreateVariableProfile('BC.CO2Status', 1);
+        }
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('CO2Status'), 'BC.CO2Status');
+        IPS_SetVariableProfileAssociation('BC.CO2Status', 0, 'Gut', 'Ok', 0x00CC00);
+        IPS_SetVariableProfileAssociation('BC.CO2Status', 1, 'Mittel', 'Warning', 0xFFA500);
+        IPS_SetVariableProfileAssociation('BC.CO2Status', 2, 'Hoch', 'Alert', 0xFF0000);
+        if (!IPS_VariableProfileExists('BC.VOCStatus')) {
+            IPS_CreateVariableProfile('BC.VOCStatus', 1);
+        }
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('VOCStatus'), 'BC.VOCStatus');
+        IPS_SetVariableProfileAssociation('BC.VOCStatus', 0, 'Gut', 'Ok', 0x00CC00);
+        IPS_SetVariableProfileAssociation('BC.VOCStatus', 1, 'Mittel', 'Warning', 0xFFA500);
+        IPS_SetVariableProfileAssociation('BC.VOCStatus', 2, 'Hoch', 'Alert', 0xFF0000);
 
-        $dehumOptions = json_encode([
-            ['Value' => 0, 'Caption' => 'Aus',          'IconValue' => 'Sleep',   'IconActive' => false, 'ColorActive' => false, 'ColorDisplay' => -1,       'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
-            ['Value' => 1, 'Caption' => 'Aktiv',        'IconValue' => 'Drops',   'IconActive' => true,  'ColorActive' => true,  'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF],
-            ['Value' => 2, 'Caption' => 'Fenster offen','IconValue' => 'Window',  'IconActive' => true,  'ColorActive' => true,  'ColorDisplay' => 0xFFCC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFCC00],
-            ['Value' => 3, 'Caption' => 'Tank voll!',   'IconValue' => 'Warning', 'IconActive' => true,  'ColorActive' => true,  'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000],
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DehumidifierStatus'), [
-            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Drops', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $dehumOptions
-        ]);
+
+        
+        if (!IPS_VariableProfileExists('BC.DehumidifierStatus')) {
+            IPS_CreateVariableProfile('BC.DehumidifierStatus', 1);
+        }
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('DehumidifierStatus'), 'BC.DehumidifierStatus');
+        IPS_SetVariableProfileAssociation('BC.DehumidifierStatus', 0, 'Aus', 'Sleep', -1);
+        IPS_SetVariableProfileAssociation('BC.DehumidifierStatus', 1, 'Aktiv', 'Drops', 0x0088FF);
+        IPS_SetVariableProfileAssociation('BC.DehumidifierStatus', 2, 'Fenster offen', 'Window', 0xFFCC00);
+        IPS_SetVariableProfileAssociation('BC.DehumidifierStatus', 3, 'Tank voll!', 'Warning', 0xFF0000);
 
         $ventRecOptions = json_encode([
             ['Value' => false, 'Caption' => 'Nein', 'IconValue' => 'Wind', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],

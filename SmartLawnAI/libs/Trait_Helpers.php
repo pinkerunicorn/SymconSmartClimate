@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 trait SmartLawnAI_Helpers {
 
     private function SetSummaryStatus(string $status): void {
@@ -17,14 +19,14 @@ trait SmartLawnAI_Helpers {
     private function GetShortStatus(string $longStatus): string {
         if (strpos($longStatus, 'HARDWARE-FEHLER') !== false) return 'Fehler (Hardware)';
         if (strpos($longStatus, 'Fehler:') !== false) return 'Fehler (API)';
-        if (strpos($longStatus, 'Bewässert:') !== false) {
-            if (preg_match('/Bewässert: .*? \((.*?)\) \(noch (\d+(:\d+)?) Min\)/', $longStatus, $m)) {
+        if (strpos($longStatus, 'BewÃ¤ssert:') !== false) {
+            if (preg_match('/BewÃ¤ssert: .*? \((.*?)\) \(noch (\d+(:\d+)?) Min\)/', $longStatus, $m)) {
                 return $m[1] . ' (' . $m[2] . ' Min)';
             }
-            if (preg_match('/Bewässert: .*? \((.*?)\)/', $longStatus, $m)) {
-                return $m[1] . ' läuft';
+            if (preg_match('/BewÃ¤ssert: .*? \((.*?)\)/', $longStatus, $m)) {
+                return $m[1] . ' lÃ¤uft';
             }
-            return 'Bewässerung läuft';
+            return 'BewÃ¤sserung lÃ¤uft';
         }
         if (strpos($longStatus, 'Wartet auf Ventil:') !== false) {
             if (preg_match('/Wartet auf Ventil: (.*?) \(/', $longStatus, $m)) {
@@ -32,8 +34,8 @@ trait SmartLawnAI_Helpers {
             }
             return 'Wartet auf Ventil';
         }
-        if (strpos($longStatus, 'Bewässere:') !== false) {
-            return str_replace('Bewässere: ', '', $longStatus) . ' startet';
+        if (strpos($longStatus, 'BewÃ¤ssere:') !== false) {
+            return str_replace('BewÃ¤ssere: ', '', $longStatus) . ' startet';
         }
         if (strpos($longStatus, 'Sickerpause:') !== false) {
             if (preg_match('/Sickerpause: (.*)/', $longStatus, $m)) {
@@ -49,8 +51,8 @@ trait SmartLawnAI_Helpers {
         if (strpos($longStatus, 'Automatik') !== false) return 'Automatik Aus';
         if (strpos($longStatus, 'Manueller Start') !== false) return 'Start angefragt';
         
-        if (strpos($longStatus, 'Bereit (Nächste Ausführung:') !== false) {
-            if (preg_match('/Nächste Ausführung: (.*?) um (.*?) Uhr/', $longStatus, $m)) {
+        if (strpos($longStatus, 'Bereit (NÃ¤chste AusfÃ¼hrung:') !== false) {
+            if (preg_match('/NÃ¤chste AusfÃ¼hrung: (.*?) um (.*?) Uhr/', $longStatus, $m)) {
                 return 'Wasser: ' . $m[1] . ' ' . $m[2];
             }
         }
@@ -109,10 +111,10 @@ trait SmartLawnAI_Helpers {
                     $eid = IPS_CreateEvent(1); // Zyklisches Event
                     IPS_SetParent($eid, $this->InstanceID);
                     IPS_SetHidden($eid, true);
-                    IPS_SetName($eid, sprintf('Zeitplan Prüfung (%02d:00)', $i));
+                    IPS_SetName($eid, sprintf('Zeitplan PrÃ¼fung (%02d:00)', $i));
                     IPS_SetIdent($eid, $ident);
                     IPS_SetEventScript($eid, "SLAI_ScheduledEvaluation(\$_IPS['TARGET']);");
-                    IPS_SetEventCyclic($eid, 0, 0, 0, 0, 0, 0); // Täglich
+                    IPS_SetEventCyclic($eid, 0, 0, 0, 0, 0, 0); // TÃ¤glich
                     IPS_SetEventCyclicTimeFrom($eid, $i, 0, 0);
                 }
                 IPS_SetEventActive($eid, true);
@@ -143,7 +145,7 @@ trait SmartLawnAI_Helpers {
             <div style="font-size: 13px; opacity: 0.8; line-height: 1.4;">'.$details.'</div>
         </div>';
         
-        // Log-Größe begrenzen auf die letzten 30 Einträge (Split am Marker)
+        // Log-GrÃ¶ÃŸe begrenzen auf die letzten 30 EintrÃ¤ge (Split am Marker)
         $entries = explode('<div class="sl-log-entry"', $currentLog);
         $entries = array_filter($entries, function($e) { return trim($e) !== ''; });
         
@@ -216,7 +218,7 @@ trait SmartLawnAI_Helpers {
         return $res;
     }
     /**
-     * Gibt die ID der TotalConsumptionLiter-Variable des SmartWaterMonitors zurück.
+     * Gibt die ID der TotalConsumptionLiter-Variable des SmartWaterMonitors zurÃ¼ck.
      * SmartWaterMonitor GUID: {09A99311-87CD-480B-A7B8-6DC226136CFB}
      */
     private function GetWaterMeterLiterVarID(): int

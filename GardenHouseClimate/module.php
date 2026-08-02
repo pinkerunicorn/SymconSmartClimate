@@ -33,7 +33,6 @@ class GardenHouseClimate extends IPSModuleStrict
         $this->RegisterVariableBoolean("WinterMode", "Winterbetrieb", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION
         ], 200);
-        IPS_SetIcon($this->GetIDForIdent('WinterMode'), 'Gear');
         $this->EnableAction("WinterMode");
         $this->SetValue("WinterMode", true); // Default to true
         
@@ -102,14 +101,13 @@ class GardenHouseClimate extends IPSModuleStrict
             'ICON'         => 'Gear'
         ]);
 
-        
-        if (!IPS_VariableProfileExists('GHC.HeaterStatus')) {
-            IPS_CreateVariableProfile('GHC.HeaterStatus', 1);
-        }
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('HeaterStatus'), 'GHC.HeaterStatus');
-        IPS_SetVariableProfileAssociation('GHC.HeaterStatus', 0, 'Aus', 'Sleep', -1);
-        IPS_SetVariableProfileAssociation('GHC.HeaterStatus', 1, 'Heizt', 'Flame', 0xFF6600);
-        IPS_SetVariableProfileAssociation('GHC.HeaterStatus', 2, 'Fehler', 'Alert', 0xFF0000);
+        $heaterPresentation = json_encode([
+            ['Value' => 0, 'Caption' => 'Aus', 'IconValue' => 'Sleep', 'ColorValue' => -1],
+            ['Value' => 1, 'Caption' => 'Heizt', 'IconValue' => 'Flame', 'ColorValue' => 0xFF6600],
+            ['Value' => 2, 'Caption' => 'Fehler', 'IconValue' => 'Alert', 'ColorValue' => 0xFF0000]
+        ]);
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('HeaterStatus'), ['PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'OPTIONS' => $heaterPresentation]);
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('HeaterStatus'), '');
 
         if (!IPS_VariableProfileExists('SM.Climate.Alarm')) {
             IPS_CreateVariableProfile('SM.Climate.Alarm', 0);
@@ -153,7 +151,7 @@ class GardenHouseClimate extends IPSModuleStrict
         }
     }
     
-    public function RequestAction(string $Ident, $Value): void{
+    public function RequestAction(string $Ident, mixed $Value): void{
         switch ($Ident) {
             case "TargetTemperature":
                 $this->SetValue($Ident, $Value);

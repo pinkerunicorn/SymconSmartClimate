@@ -2,7 +2,7 @@
     "id": "{A1B2C3D4-E5F6-4789-A123-456789ABCDEF}",
     "name": "FireplaceSafety",
     "type": 3,
-    "vendor": "Florian Gra\u00dfinger",
+    "vendor": "Florian Graßinger",
     "aliases": [
         "Fireplace Safety",
         "Kamin Sicherheit"
@@ -11,7 +11,7 @@
     "childRequirements": [],
     "implemented": [],
     "prefix": "FS",
-    "author": "Florian Gra\u00dfinger",
+    "author": "Florian Graßinger",
     "url": "https://github.com/pinkerunicorn/SymconSmartClimate/tree/main/FireplaceSafety",
     "properties": {
         "SensorOvenTemp": {

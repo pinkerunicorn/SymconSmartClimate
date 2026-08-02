@@ -86,32 +86,30 @@ class FireplaceSafety extends IPSModuleStrict
 
         
         // Ensure existing instances get updated presentations
-        if (function_exists('IPS_SetVariableCustomPresentation')) {
-            $varsToUpdate = [
-                'CurrentDeltaTemp' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Temperature'],
-                'CurrentDoorStatus' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Window'],
-                'OvenPeakTemp' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Temperature'],
-                'WoodRefillNeeded' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Flame'],
-                'FiredCount' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Flame'],
-                'AlarmOvenDoor' => [VARIABLE_PRESENTATION_SWITCH, 'Warning']
-            ];
-            foreach ($varsToUpdate as $ident => $settings) {
-                $varID = @$this->GetIDForIdent($ident);
-                if ($varID !== false && $varID > 0) {
-                    IPS_SetVariableCustomPresentation($varID, [
-                        'PRESENTATION' => $settings[0],
-                        'ICON' => $settings[1]
-                    ]);
-                }
+        $varsToUpdate = [
+            'CurrentDeltaTemp' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Temperature'],
+            'CurrentDoorStatus' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Window'],
+            'OvenPeakTemp' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Temperature'],
+            'WoodRefillNeeded' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Flame'],
+            'FiredCount' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Flame'],
+            'AlarmOvenDoor' => [VARIABLE_PRESENTATION_SWITCH, 'Warning']
+        ];
+        foreach ($varsToUpdate as $ident => $settings) {
+            $varID = @$this->GetIDForIdent($ident);
+            if ($varID !== false && $varID > 0) {
+                IPS_SetVariableCustomPresentation($varID, [
+                    'PRESENTATION' => $settings[0],
+                    'ICON' => $settings[1]
+                ]);
             }
-            
-            // Custom profiles (Associations) should also update their presentation mode
-            $customVars = ['OvenStatus' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'HoodStatus' => VARIABLE_PRESENTATION_VALUE_PRESENTATION];
-            foreach ($customVars as $ident => $pres) {
-                $varID = @$this->GetIDForIdent($ident);
-                if ($varID !== false && $varID > 0) {
-                    IPS_SetVariableCustomPresentation($varID, ['PRESENTATION' => $pres]);
-                }
+        }
+        
+        // Custom profiles (Associations) should also update their presentation mode
+        $customVars = ['OvenStatus' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'HoodStatus' => VARIABLE_PRESENTATION_VALUE_PRESENTATION];
+        foreach ($customVars as $ident => $pres) {
+            $varID = @$this->GetIDForIdent($ident);
+            if ($varID !== false && $varID > 0) {
+                IPS_SetVariableCustomPresentation($varID, ['PRESENTATION' => $pres]);
             }
         }
         
@@ -171,11 +169,9 @@ class FireplaceSafety extends IPSModuleStrict
             'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Flame', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $woodOptions
         ]);
 
-        if (function_exists('IPS_SetVariableCustomPresentation')) {
-            IPS_SetVariableCustomPresentation($this->GetIDForIdent('CurrentDeltaTemp'), ['ICON' => 'Temperature', 'SUFFIX' => ' °C']);
-            IPS_SetVariableCustomPresentation($this->GetIDForIdent('OvenPeakTemp'),     ['ICON' => 'Temperature', 'SUFFIX' => ' °C']);
-            IPS_SetVariableCustomPresentation($this->GetIDForIdent('FiredCount'),        ['ICON' => 'Flame']);
-        }
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CurrentDeltaTemp'), ['ICON' => 'Temperature', 'SUFFIX' => ' °C']);
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('OvenPeakTemp'),     ['ICON' => 'Temperature', 'SUFFIX' => ' °C']);
+        IPS_SetVariableCustomPresentation($this->GetIDForIdent('FiredCount'),        ['ICON' => 'Flame']);
         // Alarm-Variablen via Trait (Switch mit Farben)
         $this->SetupAlarmPresentation('AlarmOvenDoor',     'ALARM: Ofentür offen!');
 

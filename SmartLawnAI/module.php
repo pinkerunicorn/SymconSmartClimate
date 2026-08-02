@@ -347,7 +347,7 @@ class SmartLawnAI extends IPSModuleStrict {
         }
     }
     
-    private function OnCentralStateChanged(string $stateName, mixed $newValue): void {
+    protected function OnCentralStateChanged(string $stateName, mixed $newValue): void {
         if ($this->IsParty()) {
             // Party Mode -> Turn off automatic watering to prevent wet guests
             if ($this->GetValue('AutomaticActive')) {

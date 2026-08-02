@@ -2,7 +2,7 @@
     "id": "{C273C85E-37AD-47E4-B27D-FA514BA0CFE4}",
     "name": "BasementClimate",
     "type": 3,
-    "vendor": "Florian Gra\u00dfinger",
+    "vendor": "Florian Graßinger",
     "aliases": [
         "Basement Climate"
     ],
@@ -11,7 +11,7 @@
     "implemented": [],
     "prefix": "BC",
     "url": "https://github.com/pinkerunicorn/SymconSmartClimate/tree/main/BasementClimate",
-    "author": "Florian Gra\u00dfinger",
+    "author": "Florian Graßinger",
     "properties": {
         "SensorTempOutside": {
             "type": "integer",

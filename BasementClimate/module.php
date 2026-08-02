@@ -172,10 +172,14 @@ class BasementClimate extends IPSModuleStrict
             'ICON'          => 'Drops'
         ], 13);
         
-        $this->RegisterVariableBoolean("AlarmTankFull", "Alarm: Wassertank voll", "", 202);
+        $this->RegisterVariableBoolean("AlarmTankFull", "Alarm: Wassertank voll", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH
+        ], 202);
         $this->EnableAction("AlarmTankFull");
         
-        $this->RegisterVariableBoolean("AlarmWindowClose", "Alarm: Fenster schließen", "", 203);
+        $this->RegisterVariableBoolean("AlarmWindowClose", "Alarm: Fenster schließen", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH
+        ], 203);
         $this->EnableAction("AlarmWindowClose");
         
         // Timers
@@ -302,13 +306,12 @@ class BasementClimate extends IPSModuleStrict
             'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Wind', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $ventRecOptions
         ]);
 
-        if (!IPS_VariableProfileExists('SM.Climate.Alarm')) {
-            IPS_CreateVariableProfile('SM.Climate.Alarm', 0);
-            IPS_SetVariableProfileAssociation('SM.Climate.Alarm', 0, 'OK', 'Ok', 0x00CC00);
-            IPS_SetVariableProfileAssociation('SM.Climate.Alarm', 1, 'Alarm!', 'Alert', 0xFF0000);
+        // Migration: Delete old legacy profile
+        if (IPS_VariableProfileExists('SM.Climate.Alarm')) {
+            IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmTankFull'), '');
+            IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmWindowClose'), '');
+            IPS_DeleteVariableProfile('SM.Climate.Alarm');
         }
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmTankFull'), 'SM.Climate.Alarm');
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmWindowClose'), 'SM.Climate.Alarm');
         $defaultMax = $this->ReadPropertyFloat("DehumidifierMaxHum");
         if ($defaultMax == 0.0) {
             $defaultMax = 60.0;

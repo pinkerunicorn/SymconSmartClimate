@@ -49,14 +49,20 @@ class GardenHouseClimate extends IPSModuleStrict
             'ICON'          => 'Information'
         ], 1);
         
-        // Alarms (no legacy profiles — use CustomPresentation via Trait)
-        $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", "", 202);
+        // Alarms
+        $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH
+        ], 202);
         $this->EnableAction("AlarmHeaterDefect");
         
-        $this->RegisterVariableBoolean("AlarmFrost", "Alarm: Kritischer Frost", "", 203);
+        $this->RegisterVariableBoolean("AlarmFrost", "Alarm: Kritischer Frost", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH
+        ], 203);
         $this->EnableAction("AlarmFrost");
         
-        $this->RegisterVariableBoolean("AlarmWindowOpen", "Alarm: Fenster offen (Winter)", "", 204);
+        $this->RegisterVariableBoolean("AlarmWindowOpen", "Alarm: Fenster offen (Winter)", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH
+        ], 204);
         $this->EnableAction("AlarmWindowOpen");
         
         // Timers
@@ -109,14 +115,13 @@ class GardenHouseClimate extends IPSModuleStrict
         IPS_SetVariableCustomPresentation($this->GetIDForIdent('HeaterStatus'), ['PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'OPTIONS' => $heaterPresentation]);
         IPS_SetVariableCustomProfile($this->GetIDForIdent('HeaterStatus'), '');
 
-        if (!IPS_VariableProfileExists('SM.Climate.Alarm')) {
-            IPS_CreateVariableProfile('SM.Climate.Alarm', 0);
-            IPS_SetVariableProfileAssociation('SM.Climate.Alarm', 0, 'OK', 'Ok', 0x00CC00);
-            IPS_SetVariableProfileAssociation('SM.Climate.Alarm', 1, 'Alarm!', 'Alert', 0xFF0000);
+        // Migration: Delete old legacy profile
+        if (IPS_VariableProfileExists('SM.Climate.Alarm')) {
+            IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmHeaterDefect'), '');
+            IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmFrost'), '');
+            IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmWindowOpen'), '');
+            IPS_DeleteVariableProfile('SM.Climate.Alarm');
         }
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmHeaterDefect'), 'SM.Climate.Alarm');
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmFrost'), 'SM.Climate.Alarm');
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('AlarmWindowOpen'), 'SM.Climate.Alarm');
 
         // Messages neu registrieren (Trait)
         $this->UnregisterAllMessages();

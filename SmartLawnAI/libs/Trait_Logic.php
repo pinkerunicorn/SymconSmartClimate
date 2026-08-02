@@ -722,13 +722,23 @@ $result = GIO_Query(' . $geminiId . ',
         }
 
         $reasoningText = date('d.m.Y H:i') . "Uhr:\n";
+        $maxSicker = 0;
         foreach ($planData['irrigationPlan'] as $item) {
             $zId = isset($item['zoneId']) ? $item['zoneId'] : 'Unbekannt';
             $dur = isset($item['durationMinutes']) ? $item['durationMinutes'] : 0;
             $res = isset($item['reasoning']) ? $item['reasoning'] : '-';
             $reasoningText .= "Zone {$zId} ({$dur} Min): {$res}\n";
+            
+            $itemSicker = isset($item['sickerpauseMinuten']) ? (int)$item['sickerpauseMinuten'] : 0;
+            if ($itemSicker > $maxSicker) {
+                $maxSicker = $itemSicker;
+            }
         }
         $this->SetValue('LastGeminiResponse', trim($reasoningText));
+
+        if ($maxSicker > 0) {
+            $this->SetValue('SickerpauseMinuten', $maxSicker);
+        }
 
         // Apply Gemini calculations
         $planByZone = [];

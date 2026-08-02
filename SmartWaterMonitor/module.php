@@ -137,7 +137,7 @@ class SmartWaterMonitor extends IPSModuleStrict
         if ($irriVar > 0 && @IPS_VariableExists($irriVar)) {
             if (GetValue($irriVar)) {
                 // Bewässerung läuft, also keinen Alarm auslösen!
-                IPS_LogMessage('SmartWaterMonitor', 'Maximaler Dauerfluss erreicht, aber Bewässerung ist aktiv. Kein Alarm.');
+                $this->SLogInfo('Maximaler Dauerfluss erreicht, aber Bewässerung ist aktiv. Kein Alarm.');
                 return;
             }
         }
@@ -145,7 +145,7 @@ class SmartWaterMonitor extends IPSModuleStrict
         // Timer fired -> water running continuously for too long!
         $this->SetTimerInterval('LeakTimer', 0); // Stop timer
         $this->SetValue('LeakAlarm', true);
-        $this->SLog('ERROR', 'LECKAGE-ALARM! Wasser fließt ununterbrochen seit ' . $this->ReadPropertyInteger('MaxContinuousFlowMinutes') . ' Minuten!');
+        $this->SLogError('LECKAGE-ALARM! Wasser fließt ununterbrochen seit ' . $this->ReadPropertyInteger('MaxContinuousFlowMinutes') . ' Minuten!');
     }
 
 
@@ -234,7 +234,7 @@ class SmartWaterMonitor extends IPSModuleStrict
             }
             return "OK";
         } catch (Throwable $e) {
-            IPS_LogMessage('SmartWaterMonitor', 'Error in ReceiveData: ' . $e->getMessage());
+            $this->SLogInfo('Error in ReceiveData: ' . $e->getMessage());
             return "NOK";
         }
     }

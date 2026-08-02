@@ -207,7 +207,7 @@ trait SmartLawnAI_Logic {
                 }
             }
             if ($hardwareFehler) {
-                $this->SLog('ERROR', 'HARDWARE_FEHLER', 'Zone: ' . $zone['SensorID'] . ' | Sprinkler: ' . $fehlerhafterSprinklerName . ' meldet Defekt');
+                $this->SLogError('HARDWARE_FEHLER', 'Zone: ' . $zone['SensorID'] . ' | Sprinkler: ' . $fehlerhafterSprinklerName . ' meldet Defekt');
                 $this->SetZoneStatus($zone['SensorID'], 'HARDWARE_FEHLER');
                 continue; 
             }
@@ -258,7 +258,7 @@ trait SmartLawnAI_Logic {
                             }
                             
                             if ($startErfolgreich) {
-                                $this->SLog('INFO', 'BewÃ¤sserungs-Startbefehl gesendet', 'Zone: ' . $zone['SensorID'] . ' | Sprinkler: ' . $currentSprinklerName);
+                                $this->SLogInfo('BewÃ¤sserungs-Startbefehl gesendet', 'Zone: ' . $zone['SensorID'] . ' | Sprinkler: ' . $currentSprinklerName);
                                 $this->SetZoneStatus($zone['SensorID'], 'WAITING_FOR_OPEN');
                                 $this->SetZoneWateringStart($zone['SensorID'], time());
                                 $this->SetZoneCurrentSprinklerIndex($zone['SensorID'], $currentIndex);
@@ -338,7 +338,7 @@ trait SmartLawnAI_Logic {
                         } else {
                             $wateringStart = $this->GetZoneWateringStart($zone['SensorID']);
                             if ((time() - $wateringStart) > 180) { // 3 Minuten Timeout!
-                                $this->SLog('ERROR', 'TIMEOUT beim Ventil-Start', 'Sprinkler: ' . $currentSprinklerName . ' meldet nicht OPEN nach 3 Minuten');
+                                $this->SLogError('TIMEOUT beim Ventil-Start', 'Sprinkler: ' . $currentSprinklerName . ' meldet nicht OPEN nach 3 Minuten');
                                 $this->AddLogEvent("Timeout", "{$currentSprinklerName} meldet nicht OPEN.", '#F44336');
                                 $aktuellerStatus = 'WATERING'; // force next logic block to finish it
                             } else {
@@ -367,7 +367,7 @@ trait SmartLawnAI_Logic {
                     }
 
                     if (!$ventilOffen && $aktuellerStatus === 'WATERING') {
-                        $this->SLog('INFO', 'BewÃ¤sserung beendet', 'Sprinkler: ' . $currentSprinklerName . ' in Zone ' . $zone['SensorID'] . ' | Status: ' . $hwVal);
+                        $this->SLogInfo('BewÃ¤sserung beendet', 'Sprinkler: ' . $currentSprinklerName . ' in Zone ' . $zone['SensorID'] . ' | Status: ' . $hwVal);
                         
                         $currentIndex++;
                         if ($currentIndex < count($zoneSprinklers)) {
@@ -396,12 +396,12 @@ trait SmartLawnAI_Logic {
                                         $this->SetValue('WaterThisMonth', round($this->GetValue('WaterThisMonth') + $consumed, 1));
                                         $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $zone['SensorID'];
                                         $this->AddLogEvent("{$zoneName}: Verbrauch", "{$consumed} L verbraucht", '#03A9F4');
-                                        $this->SLog('INFO', 'Wasserverbrauch Zone ' . ($zone['GroupName'] ?? $zone['SensorID']), $consumed . ' L');
+                                        $this->SLogInfo('Wasserverbrauch Zone ' . ($zone['GroupName'] ?? $zone['SensorID']), $consumed . ' L');
                                     } else {
-                                        $this->SLog('WARNING', 'Wasserverbrauch unplausibel, ignoriert: ' . $consumed . ' L (Start: ' . $wStart . ' L, Ende: ' . $wEnd . ' L)');
+                                        $this->SLogWarning('Wasserverbrauch unplausibel, ignoriert: ' . $consumed . ' L (Start: ' . $wStart . ' L, Ende: ' . $wEnd . ' L)');
                                     }
                                 } else {
-                                    $this->SLog('WARNING', 'WasserzÃ¤hler-Startwert ungÃ¼ltig oder nicht vorhanden (Start: ' . $wStartRaw . ' L, Ende: ' . $wEnd . ' L)');
+                                    $this->SLogWarning('WasserzÃ¤hler-Startwert ungÃ¼ltig oder nicht vorhanden (Start: ' . $wStartRaw . ' L, Ende: ' . $wEnd . ' L)');
                                 }
                                 $this->SetBuffer('WaterMeterStart_' . $zone['SensorID'], '');
                             }
@@ -552,7 +552,7 @@ trait SmartLawnAI_Logic {
         $geminiInstances = IPS_GetInstanceListByModuleID('{4C8B2A6D-9E3F-4A7B-8C5D-1F6E2A3B7C4D}');
         if (empty($geminiInstances)) {
             $this->LogAndDebug('Planer', 'SmartGeminiIO Instanz nicht gefunden! Bitte eine erstellen.', 0);
-            $this->SLog('ERROR', 'SmartGeminiIO Instanz nicht gefunden', 'Bitte Instanz konfigurieren');
+            $this->SLogError('SmartGeminiIO Instanz nicht gefunden', 'Bitte Instanz konfigurieren');
             $this->SetSummaryStatus('Fehler: SmartGeminiIO nicht konfiguriert');
             return;
         }
@@ -693,7 +693,7 @@ $result = GIO_Query(' . $geminiId . ',
 
         if (empty($jsonText)) {
             $this->LogAndDebug('Planer Fehler', 'SmartGeminiIO lieferte keine Antwort.', 0);
-            $this->SLog('ERROR', 'Gemini Plan-Anfrage fehlgeschlagen', 'Leere Antwort');
+            $this->SLogError('Gemini Plan-Anfrage fehlgeschlagen', 'Leere Antwort');
             $this->SetSummaryStatus('Fehler: Gemini API (keine Antwort)');
             $this->AddLogEvent('API Fehler', 'Keine Antwort von SmartGeminiIO.', '#F44336');
             return;
@@ -785,7 +785,7 @@ $result = GIO_Query(' . $geminiId . ',
         $this->LogAndDebug('Reset', $actionName . 'aufgerufen', 0);
         
         if (!$queueForStart) {
-            $this->SLog('WARNING', 'Automatik deaktiviert', 'Alle Ventile werden gestoppt und Zonen zurÃ¼ckgesetzt.');
+            $this->SLogWarning('Automatik deaktiviert', 'Alle Ventile werden gestoppt und Zonen zurÃ¼ckgesetzt.');
             $this->SetSummaryStatus('Automatik deaktiviert (Zonen gestoppt)');
             $this->AddLogEvent("System: Abbruch", "Automatik deaktiviert, alle Ventile gestoppt.", '#F44336');
         }
@@ -823,7 +823,7 @@ $result = GIO_Query(' . $geminiId . ',
                 
                 if ($queueForStart) {
                     $this->LogAndDebug('Reset', 'Zone '. $sid . 'hart resettet und -> QUEUED.', 0);
-                    $this->SLog('INFO', 'Zone manuell zurÃ¼ckgesetzt', 'Zone: ' . $sid . ' in Warteschlange eingereiht');
+                    $this->SLogInfo('Zone manuell zurÃ¼ckgesetzt', 'Zone: ' . $sid . ' in Warteschlange eingereiht');
                 } else {
                     $this->LogAndDebug('Reset', 'Zone '. $sid . 'hart resettet und gestoppt -> IDLE.', 0);
                 }

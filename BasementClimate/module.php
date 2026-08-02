@@ -440,7 +440,7 @@ class BasementClimate extends IPSModuleStrict
     {
         $plugId = $this->ReadPropertyInteger("ActuatorDehumidifierPlug");
         if ($plugId == 0 || !IPS_VariableExists($plugId)) {
-            $this->SLog('WARNING', 'Aktor nicht konfiguriert oder nicht gefunden', "Property-ID: ActuatorDehumidifierPlug");
+            $this->SLogWarning('Aktor nicht konfiguriert oder nicht gefunden', "Property-ID: ActuatorDehumidifierPlug");
             return;
         }
         
@@ -467,9 +467,9 @@ class BasementClimate extends IPSModuleStrict
         }
         
         if ($plugStatus != $newStatus) {
-            $this->SLog('INFO', 'Entfeuchter ' . ($newStatus ? 'eingeschaltet' : 'ausgeschaltet'), 'Luftfeuchtigkeit: ' . $humIn . '% | Schwellenwert: ' . ($newStatus ? $maxHum : $minHum) . '%');
+            $this->SLogInfo('Entfeuchter ' . ($newStatus ? 'eingeschaltet' : 'ausgeschaltet'), 'Luftfeuchtigkeit: ' . $humIn . '% | Schwellenwert: ' . ($newStatus ? $maxHum : $minHum) . '%');
             if (!@RequestAction($plugId, $newStatus)) {
-                $this->SLog('WARNING', 'Entfeuchterbefehl fehlgeschlagen', "Dehumidifier Plug ID: $plugId | Ziel: " . ($newStatus ? 'An' : 'Aus'));
+                $this->SLogWarning('Entfeuchterbefehl fehlgeschlagen', "Dehumidifier Plug ID: $plugId | Ziel: " . ($newStatus ? 'An' : 'Aus'));
             }
         }
         
@@ -490,15 +490,15 @@ class BasementClimate extends IPSModuleStrict
         }
         
         if ($rad1 > 0 && IPS_VariableExists($rad1) && GetValue($rad1) != $targetTemp) {
-            $this->SLog('INFO', 'Heizkörper Zieltemperatur gesetzt', "Radiator: $rad1 | Ziel: {$targetTemp}°C | Feuchte: {$humIn}%");
+            $this->SLogInfo('Heizkörper Zieltemperatur gesetzt', "Radiator: $rad1 | Ziel: {$targetTemp}°C | Feuchte: {$humIn}%");
             if (!@RequestAction($rad1, $targetTemp)) {
-                $this->SLog('WARNING', 'Heizungsbefehl fehlgeschlagen', "Radiator ID: $rad1 | Ziel: {$targetTemp}°C");
+                $this->SLogWarning('Heizungsbefehl fehlgeschlagen', "Radiator ID: $rad1 | Ziel: {$targetTemp}°C");
             }
         }
         if ($rad2 > 0 && IPS_VariableExists($rad2) && GetValue($rad2) != $targetTemp) {
-            $this->SLog('INFO', 'Heizkörper Zieltemperatur gesetzt', "Radiator: $rad2 | Ziel: {$targetTemp}°C | Feuchte: {$humIn}%");
+            $this->SLogInfo('Heizkörper Zieltemperatur gesetzt', "Radiator: $rad2 | Ziel: {$targetTemp}°C | Feuchte: {$humIn}%");
             if (!@RequestAction($rad2, $targetTemp)) {
-                $this->SLog('WARNING', 'Heizungsbefehl fehlgeschlagen', "Radiator ID: $rad2 | Ziel: {$targetTemp}°C");
+                $this->SLogWarning('Heizungsbefehl fehlgeschlagen', "Radiator ID: $rad2 | Ziel: {$targetTemp}°C");
             }
         }
     }
@@ -507,7 +507,7 @@ class BasementClimate extends IPSModuleStrict
     {
         $plugId = $this->ReadPropertyInteger("ActuatorDehumidifierPlug");
         if ($plugId == 0) {
-            $this->SLog('WARNING', 'Aktor nicht konfiguriert', "Property-ID: ActuatorDehumidifierPlug");
+            $this->SLogWarning('Aktor nicht konfiguriert', "Property-ID: ActuatorDehumidifierPlug");
             return;
         }
         
@@ -613,9 +613,9 @@ class BasementClimate extends IPSModuleStrict
         $this->SetValueIfChanged("RadonStatus", $status);
         $this->SetValueIfChanged("RadonRecommendation", $recommendation);
         if ($status === 2) {
-            $this->SLog('WARNING', 'Radon ALARM', sprintf('Kurzzeit: %d, Langzeit: %d Bq/m³', (int) $short, (int) $long));
+            $this->SLogWarning('Radon ALARM', sprintf('Kurzzeit: %d, Langzeit: %d Bq/m³', (int) $short, (int) $long));
         } elseif ($status === 1) {
-            $this->SLog('INFO', 'Radon erhöht', sprintf('Kurzzeit: %d, Langzeit: %d Bq/m³', (int) $short, (int) $long));
+            $this->SLogInfo('Radon erhöht', sprintf('Kurzzeit: %d, Langzeit: %d Bq/m³', (int) $short, (int) $long));
         }
     }
     
@@ -649,7 +649,7 @@ class BasementClimate extends IPSModuleStrict
         $this->SetValueIfChanged("CO2Status", $status);
         $this->SetValueIfChanged("CO2Recommendation", $recommendation);
         if ($status === 2) {
-            $this->SLog('WARNING', 'CO2 ALARM', sprintf('%d ppm', (int) $value));
+            $this->SLogWarning('CO2 ALARM', sprintf('%d ppm', (int) $value));
         }
     }
     
@@ -683,7 +683,7 @@ class BasementClimate extends IPSModuleStrict
         $this->SetValueIfChanged("VOCStatus", $status);
         $this->SetValueIfChanged("VOCRecommendation", $recommendation);
         if ($status === 2) {
-            $this->SLog('WARNING', 'VOC ALARM', sprintf('%d µg/m³', (int) $value));
+            $this->SLogWarning('VOC ALARM', sprintf('%d µg/m³', (int) $value));
         }
     }
 

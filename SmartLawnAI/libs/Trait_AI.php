@@ -132,7 +132,7 @@ $result = GIO_Query(' . $geminiId . ',
                 $begruendung   = $parsed['reasoning'] ?? '';
 
                 $this->SetZoneEffizienz($zoneID, $neueEffizienz);
-                $this->SLog('INFO', 'Gemini Effizienz-Lernen (Zone ' . $zoneID . '): Neuer Faktor = ' . $neueEffizienz . 'x', $begruendung);
+                $this->SLogInfo('Gemini Effizienz-Lernen (Zone ' . $zoneID . '): Neuer Faktor = ' . $neueEffizienz . 'x', $begruendung);
                 $this->AddLogEvent("{$zoneName}: KI-Lernen erfolgreich", "Neue Effizienz: {$neueEffizienz}x. Grund: {$begruendung}", '#9C27B0');
                 return;
             }
@@ -160,7 +160,7 @@ $result = GIO_Query(' . $geminiId . ',
             $this->SetTimerInterval('GeminiRetryTimer', 300000);
         } else {
             $this->LogAndDebug('Weather', "Gemini Effizienz-Lernen fÃ¼r Zone $zoneID nach 3 Versuchen endgÃ¼ltig fehlgeschlagen.", 0);
-            $this->SLog('ERROR', 'Gemini Effizienz-Lernen fehlgeschlagen', 'Zone ' . $zoneID . ' endgÃ¼ltig fehlgeschlagen nach 3 Versuchen');
+            $this->SLogError('Gemini Effizienz-Lernen fehlgeschlagen', 'Zone ' . $zoneID . ' endgÃ¼ltig fehlgeschlagen nach 3 Versuchen');
             $this->AddLogEvent("{$zoneName}: KI-Lernen fehlgeschlagen", 'SmartGeminiIO: Keine Antwort nach 3 Versuchen.', '#F44336');
         }
     }

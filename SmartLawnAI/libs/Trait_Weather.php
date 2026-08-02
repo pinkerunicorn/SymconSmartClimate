@@ -15,7 +15,7 @@ trait SmartLawnAI_Weather {
         try {
             $omContent = Sys_GetURLContent($omUrl);
         } catch (\Throwable $e) {
-            $this->LogMessage("SLAI_UpdateWeatherForecast: Fehler beim Abrufen der Wetterdaten: " . $e->getMessage(), KL_ERROR);
+            $this->SLogError("SLAI_UpdateWeatherForecast: Fehler beim Abrufen der Wetterdaten: " . $e->getMessage());
             return;
         }
         if ($omContent !== false) {

@@ -63,9 +63,9 @@ trait SmartLawnAI_Helpers {
     private function LogAndDebug(string $Topic, string $Payload, int $Format = 0): void {
         $this->SendDebug($Topic, $Payload, $Format);
         if (is_scalar($Payload)) {
-            $this->SLog('INFO', $Topic, (string)$Payload);
+            $this->SLogInfo($Topic, (string)$Payload);
         } else {
-            $this->SLog('INFO', $Topic, json_encode($Payload));
+            $this->SLogInfo($Topic, json_encode($Payload));
         }
     }
 
@@ -168,7 +168,7 @@ trait SmartLawnAI_Helpers {
             return RequestAction($variableID, $value);
         } catch (\Throwable $e) {
             $this->LogAndDebug('SafeRequestAction', 'Fehler beim Senden an ID ' . $variableID . ': ' . $e->getMessage(), 0);
-            $this->SLog('ERROR', 'Sende-Fehler', 'Sende-Fehler an ID ' . $variableID . ': ' . $e->getMessage());
+            $this->SLogError('Sende-Fehler', 'Sende-Fehler an ID ' . $variableID . ': ' . $e->getMessage());
             return false;
         }
     }

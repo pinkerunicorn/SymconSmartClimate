@@ -212,7 +212,7 @@ class GardenHouseClimate extends IPSModuleStrict
         
         $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
         if ($plugId == 0 || !IPS_VariableExists($plugId)) {
-            $this->SLog('WARNING', 'Aktor nicht konfiguriert oder nicht gefunden', "Property-ID: ActuatorHeaterPlug");
+            $this->SLogWarning('Aktor nicht konfiguriert oder nicht gefunden', "Property-ID: ActuatorHeaterPlug");
             return;
         }
         
@@ -231,7 +231,7 @@ class GardenHouseClimate extends IPSModuleStrict
     {
         $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
         if ($plugId == 0 || !IPS_VariableExists($plugId)) {
-            $this->SLog('WARNING', 'Aktor nicht konfiguriert oder nicht gefunden', "Property-ID: ActuatorHeaterPlug");
+            $this->SLogWarning('Aktor nicht konfiguriert oder nicht gefunden', "Property-ID: ActuatorHeaterPlug");
             return;
         }
         
@@ -239,9 +239,9 @@ class GardenHouseClimate extends IPSModuleStrict
         if ($plugStatus !== $state) {
             $tempIn = $this->GetPropertyVarValue("SensorTempInside");
             $targetTemp = $this->GetValue("TargetTemperature");
-            $this->SLog('INFO', 'Heizung ' . ($state ? 'eingeschaltet' : 'ausgeschaltet'), 'Innentemperatur: ' . $tempIn . '°C | Zieltemperatur: ' . $targetTemp . '°C');
+            $this->SLogInfo('Heizung ' . ($state ? 'eingeschaltet' : 'ausgeschaltet'), 'Innentemperatur: ' . $tempIn . '°C | Zieltemperatur: ' . $targetTemp . '°C');
             if (!@RequestAction($plugId, $state)) {
-                $this->SLog('WARNING', 'Heizungsbefehl fehlgeschlagen', "Heater Plug ID: $plugId | Ziel: " . ($state ? 'An' : 'Aus'));
+                $this->SLogWarning('Heizungsbefehl fehlgeschlagen', "Heater Plug ID: $plugId | Ziel: " . ($state ? 'An' : 'Aus'));
             }
         }
         $this->SetValue("HeaterStatus", $statusText);
@@ -258,7 +258,7 @@ class GardenHouseClimate extends IPSModuleStrict
         
         $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
         if ($plugId == 0) {
-            $this->SLog('WARNING', 'Aktor nicht konfiguriert', "Property-ID: ActuatorHeaterPlug");
+            $this->SLogWarning('Aktor nicht konfiguriert', "Property-ID: ActuatorHeaterPlug");
             return;
         }
         

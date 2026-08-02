@@ -20,20 +20,7 @@ declare(strict_types=1);
 if (!trait_exists('ClimateCommon_Trait')) {
 trait ClimateCommon_Trait
 {
-    // ─────────────────────────────────────────────────────────────────
-    // Logging (LogMessage Override – nutzt SLog aus SmartLog_Trait)
-    // ─────────────────────────────────────────────────────────────────
 
-    protected function LogMessage(string $Message, int $Type): bool
-    {
-        $level = match(true) {
-            $Type >= IS_EBASE => 'ERROR',
-            $Type >= IS_WBASE => 'WARNING',
-            default           => 'INFO',
-        };
-        $this->SLog($level, $Message);
-        return true;
-    }
 
     // ─────────────────────────────────────────────────────────────────
     // Variablen-Hilfsmethoden

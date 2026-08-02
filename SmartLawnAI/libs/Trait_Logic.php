@@ -666,9 +666,13 @@ trait SmartLawnAI_Logic {
                         ],
                         'required'=> ['zoneId', 'durationMinutes', 'reasoning']
                     ]
+                ],
+                'recommendedMaxDurationMinutes'=> [
+                    'type'=> 'INTEGER',
+                    'description'=> 'Die generelle agronomische Empfehlung für die absolut maximale Bewässerungsdauer in Minuten (ohne das Limit des Nutzers zu berücksichtigen).'
                 ]
             ],
-            'required'=> ['irrigationPlan']
+            'required'=> ['irrigationPlan', 'recommendedMaxDurationMinutes']
         ];
 
         $this->LogAndDebug('Planer', 'Gemini Anfrage wird gesendet...', 0);
@@ -734,6 +738,12 @@ $result = GIO_Query(' . $geminiId . ',
                 $maxSicker = $itemSicker;
             }
         }
+        
+        $recMaxDur = isset($planData['recommendedMaxDurationMinutes']) ? (int)$planData['recommendedMaxDurationMinutes'] : 0;
+        if ($recMaxDur > 0) {
+             $reasoningText .= "\n💡 KI-Empfehlung für Max. Dauer: {$recMaxDur} Min.";
+        }
+        
         $this->SetValue('LastGeminiResponse', trim($reasoningText));
 
         if ($maxSicker > 0) {

@@ -6,7 +6,7 @@ declare(strict_types=1);
  * SmartLawnAI_AI â€” Gemini KI-Integration via SmartGeminiIO.
  *
  * Nutzt GIO_Query() statt direkter curl-Aufrufe.
- * API-Key und Modell werden Ã¼ber SmartGeminiIO zentral verwaltet.
+ * API-Key und Modell werden über SmartGeminiIO zentral verwaltet.
  */
 trait SmartLawnAI_AI {
 
@@ -34,7 +34,7 @@ trait SmartLawnAI_AI {
             $this->SetTimerInterval('GeminiRetryTimer', 0);
         }
 
-        $this->LogAndDebug('Weather', 'Starte Gemini Retry Versuch ' . ($item['retryCount'] + 1) . ' fÃ¼r Zone ' . $item['zoneID'], 0);
+        $this->LogAndDebug('Weather', 'Starte Gemini Retry Versuch ' . ($item['retryCount'] + 1) . ' für Zone ' . $item['zoneID'], 0);
 
         $this->EvaluateEfficiencyWithGemini(
             $item['zoneID'],
@@ -69,21 +69,21 @@ trait SmartLawnAI_AI {
         }
         $geminiId = $geminiInstances[0];
 
-        $userPrompt  = "Du bist ein Agrar-Analyst. Bewerte den folgenden BewÃ¤sserungs-Zyklus:\n";
+        $userPrompt  = "Du bist ein Agrar-Analyst. Bewerte den folgenden Bewässerungs-Zyklus:\n";
         $userPrompt .= "- Zone ID: $zoneID\n";
-        $userPrompt .= "- Dauer der BewÃ¤sserung: $dauer Minuten\n";
-        $userPrompt .= "- Bodenfeuchte vor dem GieÃŸen: $startFeuchte %\n";
+        $userPrompt .= "- Dauer der Bewässerung: $dauer Minuten\n";
+        $userPrompt .= "- Bodenfeuchte vor dem Gießen: $startFeuchte %\n";
         $userPrompt .= "- Bodenfeuchte nach der Sickerpause: $aktuelleFeuchte %\n";
-        $userPrompt .= "- Wetter: SÃ¤ttigungsdefizit (VPD) = $vpd kPa, Helligkeit = $lux Lux\n";
-        $userPrompt .= "\nBerechne einen neuen 'efficiencyPercentPerMinute'-Multiplikator fÃ¼r diese Zone (wie viel Prozent Feuchte bringt 1 Minute GieÃŸen). Normaler Wert: 0.5 bis 3.0.";
+        $userPrompt .= "- Wetter: Sättigungsdefizit (VPD) = $vpd kPa, Helligkeit = $lux Lux\n";
+        $userPrompt .= "\nBerechne einen neuen 'efficiencyPercentPerMinute'-Multiplikator für diese Zone (wie viel Prozent Feuchte bringt 1 Minute Gießen). Normaler Wert: 0.5 bis 3.0.";
 
-        $systemInstruction = 'Du antwortest ausschlieÃŸlich im JSON-Format.';
+        $systemInstruction = 'Du antwortest ausschließlich im JSON-Format.';
 
         $responseSchema = json_encode([
             'type'       => 'OBJECT',
             'properties' => [
                 'newEfficiencyMultiplier' => ['type' => 'NUMBER', 'description' => 'Der neu berechnete Effizienz-Faktor.'],
-                'reasoning'              => ['type' => 'STRING', 'description' => 'Agronomische BegrÃ¼ndung fÃ¼r diesen Wert.']
+                'reasoning'              => ['type' => 'STRING', 'description' => 'Agronomische Begründung für diesen Wert.']
             ],
             'required' => ['newEfficiencyMultiplier', 'reasoning']
         ]);
@@ -140,7 +140,7 @@ $result = GIO_Query(' . $geminiId . ',
 
         // Fehlerfall: Retry
         if ($retryCount < 3) {
-            $this->LogAndDebug('Weather', "Fehler beim Gemini Effizienz-Lernen fÃ¼r Zone $zoneID. Starte Retry in 5 Minuten (Versuch " . ($retryCount + 1) . ").", 0);
+            $this->LogAndDebug('Weather', "Fehler beim Gemini Effizienz-Lernen für Zone $zoneID. Starte Retry in 5 Minuten (Versuch " . ($retryCount + 1) . ").", 0);
 
             $queueStr = $this->GetBuffer('GeminiRetryQueue');
             $queue    = $queueStr ? json_decode($queueStr, true) : [];
@@ -159,8 +159,8 @@ $result = GIO_Query(' . $geminiId . ',
             $this->SetBuffer('GeminiRetryQueue', json_encode($queue));
             $this->SetTimerInterval('GeminiRetryTimer', 300000);
         } else {
-            $this->LogAndDebug('Weather', "Gemini Effizienz-Lernen fÃ¼r Zone $zoneID nach 3 Versuchen endgÃ¼ltig fehlgeschlagen.", 0);
-            $this->SLogError('Gemini Effizienz-Lernen fehlgeschlagen', 'Zone ' . $zoneID . ' endgÃ¼ltig fehlgeschlagen nach 3 Versuchen');
+            $this->LogAndDebug('Weather', "Gemini Effizienz-Lernen für Zone $zoneID nach 3 Versuchen endgültig fehlgeschlagen.", 0);
+            $this->SLogError('Gemini Effizienz-Lernen fehlgeschlagen', 'Zone ' . $zoneID . ' endgültig fehlgeschlagen nach 3 Versuchen');
             $this->AddLogEvent("{$zoneName}: KI-Lernen fehlgeschlagen", 'SmartGeminiIO: Keine Antwort nach 3 Versuchen.', '#F44336');
         }
     }

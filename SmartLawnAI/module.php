@@ -132,6 +132,8 @@ class SmartLawnAI extends IPSModuleStrict {
         // Timer für die 60-Sekunden-Taktung (Zustandsmaschine)
         $this->RegisterTimer('LawnAITimer', 0, 'SLAI_ProcessLogic($_IPS[\'TARGET\']);');
         
+        $this->RegisterAttributeString('WaterResetDates', '{}');
+        
         // NEU: Gemini Retry Timer
         $this->RegisterTimer('GeminiRetryTimer', 0, 'SLAI_ProcessGeminiRetry($_IPS[\'TARGET\']);');
         

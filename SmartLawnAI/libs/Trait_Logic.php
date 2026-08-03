@@ -127,16 +127,6 @@ trait SmartLawnAI_Logic {
             $this->SetTimerInterval('LawnAITimer', 0);
         }
 
-        // 3b. Sperrzeit: Automatik nur wenn nicht manuell überschrieben
-        $zeitIstVerboten = $this->IsTimeForbidden(time());
-        if ($zeitIstVerboten && !$this->GetValue('SperrzeitActive') && $this->GetBuffer('SperrzeitManualOff') !== 'true') {
-            $this->SetValue('SperrzeitActive', true);
-        }
-        // Buffer zurücksetzen wenn Zeitfenster verlassen wird
-        if (!$zeitIstVerboten && $this->GetBuffer('SperrzeitManualOff') === 'true') {
-            $this->SetBuffer('SperrzeitManualOff', '');
-        }
-
         // 3c. Aktuellen Durchfluss von SmartWaterMonitor aktualisieren
         $wFlowID = $this->GetWaterMeterFlowRateVarID();
         if ($wFlowID > 0 && IPS_VariableExists($wFlowID)) {

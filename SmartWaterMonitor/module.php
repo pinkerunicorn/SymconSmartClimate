@@ -170,9 +170,27 @@ class SmartWaterMonitor extends IPSModuleStrict
                 
                 // Flow Rate
                 if (strpos($topic, 'flow') !== false || strpos($topic, 'rate') !== false) {
-                    $this->SetValue('FlowRate', $value);
+                    $currentFlow = $this->GetValue('FlowRate');
                     
-                    if ($value > 0) {
+                    if ($value == 0 || $currentFlow == 0) {
+                        $smoothedValue = $value;
+                    } else {
+                        // Smoothing-Faktor (Alpha). Kleiner = weicher, Größer = schneller
+                        $alpha = 0.2;
+                        
+                        // Wenn die Abweichung extrem groß ist, schneller reagieren (dynamisches Alpha)
+                        $diff = abs($value - $currentFlow);
+                        if ($diff > ($currentFlow * 0.3)) {
+                            $alpha = 0.6; // Schneller anpassen bei großen Sprüngen
+                        }
+                        
+                        $smoothedValue = ($value * $alpha) + ($currentFlow * (1.0 - $alpha));
+                    }
+                    
+                    $smoothedValue = round($smoothedValue, 2);
+                    $this->SetValue('FlowRate', $smoothedValue);
+                    
+                    if ($smoothedValue > 0) {
                         // Water started running
                         if (!$this->GetValue('WaterRunning')) {
                             $this->SetValue('WaterRunning', true);

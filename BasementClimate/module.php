@@ -51,8 +51,17 @@ class BasementClimate extends IPSModuleStrict
         
         // Variables
         $this->RegisterVariableBoolean("VentilationRecommendation", "Lüften empfohlen!", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Wind'
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Wind',
+            'COLOR'         => -1,
+            'CONTENT_COLOR' => -1,
+            'DISPLAY_TYPE'  => 0,
+            'PREVIEW_STYLE' => 1,
+            'SHOW_PREVIEW'  => true,
+            'OPTIONS'       => json_encode([
+                ['Value' => false, 'Caption' => 'Nein', 'IconValue' => 'Wind', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
+                ['Value' => true, 'Caption' => 'Lüften empfohlen', 'IconValue' => 'Wind', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF]
+            ])
         ], 100);
         $this->RegisterVariableString("VentilationDetails", "Hinweis", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
@@ -109,7 +118,13 @@ class BasementClimate extends IPSModuleStrict
         
         $this->RegisterVariableInteger("RadonStatus", "Radon Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Gauge'
+            'ICON'         => 'Gauge',
+            'OPTIONS'      => json_encode([
+                ['Value' => 0, 'Caption' => 'Gut', 'IconValue' => 'Ok', 'ColorValue' => 0x00CC00],
+                ['Value' => 1, 'Caption' => 'Mittel', 'IconValue' => 'Warning', 'ColorValue' => 0xFFA500],
+                ['Value' => 2, 'Caption' => 'Hoch', 'IconValue' => 'Alert', 'ColorValue' => 0xFF0000],
+                ['Value' => 3, 'Caption' => 'Sehr hoch', 'IconValue' => 'Alert', 'ColorValue' => 0xCC0000]
+            ])
         ], 8);
         
         $this->RegisterVariableString("RadonRecommendation", "Radon Empfehlung", [
@@ -124,9 +139,16 @@ class BasementClimate extends IPSModuleStrict
             'DECIMALPLACES' => 0
         ], 9);
         
+        $co2Options = json_encode([
+            ['Value' => 0, 'Caption' => 'Gut', 'IconValue' => 'Ok', 'ColorValue' => 0x00CC00],
+            ['Value' => 1, 'Caption' => 'Mittel', 'IconValue' => 'Warning', 'ColorValue' => 0xFFA500],
+            ['Value' => 2, 'Caption' => 'Hoch', 'IconValue' => 'Alert', 'ColorValue' => 0xFF0000]
+        ]);
+        
         $this->RegisterVariableInteger("CO2Status", "CO₂ Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Climate'
+            'ICON'         => 'Climate',
+            'OPTIONS'      => $co2Options
         ], 10);
         
         $this->RegisterVariableString("CO2Recommendation", "CO₂ Empfehlung", [
@@ -143,7 +165,8 @@ class BasementClimate extends IPSModuleStrict
         
         $this->RegisterVariableInteger("VOCStatus", "VOC Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Climate'
+            'ICON'         => 'Climate',
+            'OPTIONS'      => $co2Options
         ], 12);
         
         $this->RegisterVariableString("VOCRecommendation", "VOC Empfehlung", [
@@ -169,7 +192,13 @@ class BasementClimate extends IPSModuleStrict
         
         $this->RegisterVariableInteger("DehumidifierStatus", "Status Entfeuchter", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'          => 'Drops'
+            'ICON'          => 'Drops',
+            'OPTIONS'       => json_encode([
+                ['Value' => 0, 'Caption' => 'Aus', 'IconValue' => 'Sleep', 'ColorValue' => -1],
+                ['Value' => 1, 'Caption' => 'Aktiv', 'IconValue' => 'Drops', 'ColorValue' => 0x0088FF],
+                ['Value' => 2, 'Caption' => 'Fenster offen', 'IconValue' => 'Window', 'ColorValue' => 0xFFCC00],
+                ['Value' => 3, 'Caption' => 'Tank voll!', 'IconValue' => 'Warning', 'ColorValue' => 0xFF0000]
+            ])
         ], 13);
         
         $this->RegisterVariableBoolean("AlarmTankFull", "Alarm: Wassertank voll", [
@@ -268,43 +297,10 @@ class BasementClimate extends IPSModuleStrict
         }
         
         // Presentations (Symcon 8+)
-        
-        $radonPresentation = json_encode([
-            ['Value' => 0, 'Caption' => 'Gut', 'IconValue' => 'Ok', 'ColorValue' => 0x00CC00],
-            ['Value' => 1, 'Caption' => 'Mittel', 'IconValue' => 'Warning', 'ColorValue' => 0xFFA500],
-            ['Value' => 2, 'Caption' => 'Hoch', 'IconValue' => 'Alert', 'ColorValue' => 0xFF0000],
-            ['Value' => 3, 'Caption' => 'Sehr hoch', 'IconValue' => 'Alert', 'ColorValue' => 0xCC0000]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('RadonStatus'), ['PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'OPTIONS' => $radonPresentation]);
         IPS_SetVariableCustomProfile($this->GetIDForIdent('RadonStatus'), '');
-
-        $co2Presentation = json_encode([
-            ['Value' => 0, 'Caption' => 'Gut', 'IconValue' => 'Ok', 'ColorValue' => 0x00CC00],
-            ['Value' => 1, 'Caption' => 'Mittel', 'IconValue' => 'Warning', 'ColorValue' => 0xFFA500],
-            ['Value' => 2, 'Caption' => 'Hoch', 'IconValue' => 'Alert', 'ColorValue' => 0xFF0000]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CO2Status'), ['PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'OPTIONS' => $co2Presentation]);
         IPS_SetVariableCustomProfile($this->GetIDForIdent('CO2Status'), '');
-
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VOCStatus'), ['PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'OPTIONS' => $co2Presentation]);
         IPS_SetVariableCustomProfile($this->GetIDForIdent('VOCStatus'), '');
-        
-        $dehumidifierPresentation = json_encode([
-            ['Value' => 0, 'Caption' => 'Aus', 'IconValue' => 'Sleep', 'ColorValue' => -1],
-            ['Value' => 1, 'Caption' => 'Aktiv', 'IconValue' => 'Drops', 'ColorValue' => 0x0088FF],
-            ['Value' => 2, 'Caption' => 'Fenster offen', 'IconValue' => 'Window', 'ColorValue' => 0xFFCC00],
-            ['Value' => 3, 'Caption' => 'Tank voll!', 'IconValue' => 'Warning', 'ColorValue' => 0xFF0000]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('DehumidifierStatus'), ['PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'OPTIONS' => $dehumidifierPresentation]);
         IPS_SetVariableCustomProfile($this->GetIDForIdent('DehumidifierStatus'), '');
-
-        $ventRecOptions = json_encode([
-            ['Value' => false, 'Caption' => 'Nein', 'IconValue' => 'Wind', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
-            ['Value' => true, 'Caption' => 'Lüften empfohlen', 'IconValue' => 'Wind', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('VentilationRecommendation'), [
-            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Wind', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $ventRecOptions
-        ]);
 
         // Migration: Delete old legacy profile
         if (IPS_VariableProfileExists('SM.Climate.Alarm')) {

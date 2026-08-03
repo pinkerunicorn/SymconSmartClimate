@@ -31,7 +31,8 @@ class GardenHouseClimate extends IPSModuleStrict
         
         // Variables
         $this->RegisterVariableBoolean("WinterMode", "Winterbetrieb", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON'         => 'Gear'
         ], 200);
         $this->EnableAction("WinterMode");
         $this->SetValue("WinterMode", true); // Default to true
@@ -44,9 +45,15 @@ class GardenHouseClimate extends IPSModuleStrict
         ], 201);
         $this->EnableAction("TargetTemperature");
         
+        $heaterPresentation = json_encode([
+            ['Value' => 0, 'Caption' => 'Aus', 'IconValue' => 'Sleep', 'ColorValue' => -1],
+            ['Value' => 1, 'Caption' => 'Heizt', 'IconValue' => 'Flame', 'ColorValue' => 0xFF6600],
+            ['Value' => 2, 'Caption' => 'Fehler', 'IconValue' => 'Alert', 'ColorValue' => 0xFF0000]
+        ]);
         $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'          => 'Information'
+            'ICON'          => 'Information',
+            'OPTIONS'       => $heaterPresentation
         ], 1);
         
         // Alarms
@@ -102,17 +109,6 @@ class GardenHouseClimate extends IPSModuleStrict
         // ---------------------------------
 
         // Presentations (Symcon 8+)
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('WinterMode'), [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
-            'ICON'         => 'Gear'
-        ]);
-
-        $heaterPresentation = json_encode([
-            ['Value' => 0, 'Caption' => 'Aus', 'IconValue' => 'Sleep', 'ColorValue' => -1],
-            ['Value' => 1, 'Caption' => 'Heizt', 'IconValue' => 'Flame', 'ColorValue' => 0xFF6600],
-            ['Value' => 2, 'Caption' => 'Fehler', 'IconValue' => 'Alert', 'ColorValue' => 0xFF0000]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('HeaterStatus'), ['PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'OPTIONS' => $heaterPresentation]);
         IPS_SetVariableCustomProfile($this->GetIDForIdent('HeaterStatus'), '');
 
         // Migration: Delete old legacy profile

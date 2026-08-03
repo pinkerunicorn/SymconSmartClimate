@@ -36,19 +36,49 @@ class FireplaceSafety extends IPSModuleStrict
             'DECIMALPLACES' => 1
         ], 1);
         
+        $doorOptions = json_encode([
+            ['Value' => false, 'Caption' => 'Geschlossen', 'IconValue' => 'Window', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
+            ['Value' => true, 'Caption' => 'Offen', 'IconValue' => 'Window', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFFA500, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFA500]
+        ]);
         $this->RegisterVariableBoolean("CurrentDoorStatus", "Status Ofentür", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Window'
+            'ICON' => 'Window',
+            'COLOR' => -1,
+            'CONTENT_COLOR' => -1,
+            'DISPLAY_TYPE' => 0,
+            'PREVIEW_STYLE' => 1,
+            'SHOW_PREVIEW' => true,
+            'OPTIONS' => $doorOptions
         ], 2);
         
+        $ovenOptions = json_encode([
+            ['Value' => false, 'Caption' => 'Aus', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
+            ['Value' => true, 'Caption' => 'An', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF6600, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF6600]
+        ]);
         $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Flame'
+            'ICON'         => 'Flame',
+            'COLOR' => -1,
+            'CONTENT_COLOR' => -1,
+            'DISPLAY_TYPE' => 0,
+            'PREVIEW_STYLE' => 1,
+            'SHOW_PREVIEW' => true,
+            'OPTIONS' => $ovenOptions
         ], 3);
         
+        $hoodOptions = json_encode([
+            ['Value' => false, 'Caption' => 'Gesperrt', 'IconValue' => 'Lock', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000],
+            ['Value' => true, 'Caption' => 'Freigegeben', 'IconValue' => 'Unlock', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00FF00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00FF00]
+        ]);
         $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Information'
+            'ICON'         => 'Information',
+            'COLOR' => -1,
+            'CONTENT_COLOR' => -1,
+            'DISPLAY_TYPE' => 0,
+            'PREVIEW_STYLE' => 1,
+            'SHOW_PREVIEW' => true,
+            'OPTIONS' => $hoodOptions
         ], 4);
         
         $this->RegisterVariableBoolean("AlarmOvenDoor", "Alarm Ofentür", [
@@ -63,9 +93,19 @@ class FireplaceSafety extends IPSModuleStrict
             'SUFFIX' => ' °C'
         ], 5);
         
+        $woodOptions = json_encode([
+            ['Value' => false, 'Caption' => 'Ausreichend', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
+            ['Value' => true, 'Caption' => 'Nachlegen!', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFFA500, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFA500]
+        ]);
         $this->RegisterVariableBoolean("WoodRefillNeeded", "Bitte Holz nachlegen", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Flame'
+            'ICON' => 'Flame',
+            'COLOR' => -1,
+            'CONTENT_COLOR' => -1,
+            'DISPLAY_TYPE' => 0,
+            'PREVIEW_STYLE' => 1,
+            'SHOW_PREVIEW' => true,
+            'OPTIONS' => $woodOptions
         ], 100);
         $this->RegisterVariableInteger("FiredCount", "Anzahl Angefeuert", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
@@ -84,34 +124,6 @@ class FireplaceSafety extends IPSModuleStrict
             return;
         }
 
-        
-        // Ensure existing instances get updated presentations
-        $varsToUpdate = [
-            'CurrentDeltaTemp' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Temperature'],
-            'CurrentDoorStatus' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Window'],
-            'OvenPeakTemp' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Temperature'],
-            'WoodRefillNeeded' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Flame'],
-            'FiredCount' => [VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'Flame'],
-            'AlarmOvenDoor' => [VARIABLE_PRESENTATION_SWITCH, 'Warning']
-        ];
-        foreach ($varsToUpdate as $ident => $settings) {
-            $varID = @$this->GetIDForIdent($ident);
-            if ($varID !== false && $varID > 0) {
-                IPS_SetVariableCustomPresentation($varID, [
-                    'PRESENTATION' => $settings[0],
-                    'ICON' => $settings[1]
-                ]);
-            }
-        }
-        
-        // Custom profiles (Associations) should also update their presentation mode
-        $customVars = ['OvenStatus' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'HoodStatus' => VARIABLE_PRESENTATION_VALUE_PRESENTATION];
-        foreach ($customVars as $ident => $pres) {
-            $varID = @$this->GetIDForIdent($ident);
-            if ($varID !== false && $varID > 0) {
-                IPS_SetVariableCustomPresentation($varID, ['PRESENTATION' => $pres]);
-            }
-        }
         
         // --- Auto-generated References ---
         foreach ($this->GetReferenceList() as $refID) {
@@ -137,41 +149,6 @@ class FireplaceSafety extends IPSModuleStrict
         // ---------------------------------
 
         // Presentations (Symcon 8+)
-        $ovenOptions = json_encode([
-            ['Value' => false, 'Caption' => 'Aus', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
-            ['Value' => true, 'Caption' => 'An', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF6600, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF6600]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('OvenStatus'), [
-            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Flame', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $ovenOptions
-        ]);
-
-        $hoodOptions = json_encode([
-            ['Value' => false, 'Caption' => 'Gesperrt', 'IconValue' => 'Lock', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000],
-            ['Value' => true, 'Caption' => 'Freigegeben', 'IconValue' => 'Unlock', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00FF00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00FF00]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('HoodStatus'), [
-            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Information', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $hoodOptions
-        ]);
-
-        $doorOptions = json_encode([
-            ['Value' => false, 'Caption' => 'Geschlossen', 'IconValue' => 'Window', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
-            ['Value' => true, 'Caption' => 'Offen', 'IconValue' => 'Window', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFFA500, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFA500]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CurrentDoorStatus'), [
-            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Window', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $doorOptions
-        ]);
-
-        $woodOptions = json_encode([
-            ['Value' => false, 'Caption' => 'Ausreichend', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
-            ['Value' => true, 'Caption' => 'Nachlegen!', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFFA500, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFA500]
-        ]);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('WoodRefillNeeded'), [
-            'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}', 'ICON' => 'Flame', 'COLOR' => -1, 'CONTENT_COLOR' => -1, 'DISPLAY_TYPE' => 0, 'PREVIEW_STYLE' => 1, 'SHOW_PREVIEW' => true, 'OPTIONS' => $woodOptions
-        ]);
-
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('CurrentDeltaTemp'), ['ICON' => 'Temperature', 'SUFFIX' => ' °C']);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('OvenPeakTemp'),     ['ICON' => 'Temperature', 'SUFFIX' => ' °C']);
-        IPS_SetVariableCustomPresentation($this->GetIDForIdent('FiredCount'),        ['ICON' => 'Flame']);
         // Alarm-Variablen via Trait (Switch mit Farben)
         $this->SetupAlarmPresentation('AlarmOvenDoor',     'ALARM: Ofentür offen!');
 

@@ -93,6 +93,20 @@ class SmartLawnAI extends IPSModuleStrict {
         $this->RegisterPropertyInteger('WaterMonitorInstanceID', 0);
         
         $this->RegisterVariableBoolean("WateringActive", "Bewässerung läuft", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Drop'], 2);
+        $this->RegisterVariableBoolean("SperrzeitActive", "🚫 Sperrzeit aktiv", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON' => 'Clock',
+            'OPTIONS' => json_encode([
+                ['Value' => false, 'Caption' => 'Keine Sperrzeit',
+                 'IconActive' => true, 'IconValue' => 'Ok',
+                 'ColorActive' => true, 'ColorValue' => 0x4CAF50, 'ColorDisplay' => 0x4CAF50,
+                 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF, 'ContentColorDisplay' => 0xFFFFFF],
+                ['Value' => true, 'Caption' => 'Sperrzeit aktiv',
+                 'IconActive' => true, 'IconValue' => 'Warning',
+                 'ColorActive' => true, 'ColorValue' => 0xFF9800, 'ColorDisplay' => 0xFF9800,
+                 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF, 'ContentColorDisplay' => 0xFFFFFF]
+            ])
+        ], 9);
 
         // Wasserverbrauch-Variablen
         $this->RegisterVariableFloat("WaterLastSession", "Letzte Beregnung", [

@@ -143,6 +143,9 @@ trait SmartLawnAI_Logic {
             $this->SetTimerInterval('LawnAITimer', 0);
         }
 
+        // 3b. Sperrzeit-Indikator aktualisieren
+        $this->SetValue('SperrzeitActive', $this->IsTimeForbidden(time()));
+
         // Manueller Start
         $isManualStart = ($this->GetBuffer('CalculatePlanPending') === 'true');
         if ($isManualStart) {

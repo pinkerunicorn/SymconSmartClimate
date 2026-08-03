@@ -265,6 +265,15 @@ trait SmartLawnAI_Helpers {
         $this->SetBuffer('ZoneSickerpauseStart_' . $sid, (string)$timestamp);
     }
 
+    protected function GetZoneSickerpauseMinuten($sid): int {
+        $v = $this->GetBuffer('ZoneSickerpauseMinuten_' . $sid);
+        return $v !== '' ? (int)$v : (int)GetValue($this->GetIDForIdent('SickerpauseMinuten'));
+    }
+
+    protected function SetZoneSickerpauseMinuten($sid, int $val): void {
+        $this->SetBuffer('ZoneSickerpauseMinuten_' . $sid, (string)$val);
+    }
+
     protected function GetZoneStartFeuchte($sid): float {
         return (float)$this->GetBuffer('ZoneStartFeuchte_' . $sid);
     }

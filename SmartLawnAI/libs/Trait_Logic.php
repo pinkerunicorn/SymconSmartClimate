@@ -727,11 +727,18 @@ $result = GIO_Query(' . $geminiId . ',
 
         $reasoningText = date('d.m.Y H:i') . "Uhr:\n";
         $maxSicker = 0;
+        // Zonennamen-Mapping aufbauen
+        $zoneNameMap = [];
+        foreach ($zones as $z) {
+            $zoneNameMap[(int)$z['SensorID']] = isset($z['GroupName']) && !empty($z['GroupName'])
+                ? $z['GroupName'] : 'Zone ' . $z['SensorID'];
+        }
         foreach ($planData['irrigationPlan'] as $item) {
             $zId = isset($item['zoneId']) ? $item['zoneId'] : 'Unbekannt';
             $dur = isset($item['durationMinutes']) ? $item['durationMinutes'] : 0;
             $res = isset($item['reasoning']) ? $item['reasoning'] : '-';
-            $reasoningText .= "Zone {$zId} ({$dur} Min): {$res}\n";
+            $displayName = $zoneNameMap[(int)$zId] ?? 'Zone ' . $zId;
+            $reasoningText .= "{$displayName} ({$dur} Min): {$res}\n";
             
             $itemSicker = isset($item['sickerpauseMinuten']) ? (int)$item['sickerpauseMinuten'] : 0;
             if ($itemSicker > $maxSicker) {
@@ -851,6 +858,7 @@ $result = GIO_Query(' . $geminiId . ',
                 $this->SetZoneCurrentSprinklerIndex($sid, 0);
                 $this->SetZoneSickerpauseStart($sid, 0);
                 $this->SetZoneWateringStart($sid, 0);
+                $this->SetBuffer('ZoneSickerpauseMinuten_' . $sid, '');
                 $this->SetBuffer('WaterMeterStart_' . $sid, '');
 
                 $newStatus = $queueForStart ? 'QUEUED': 'IDLE';

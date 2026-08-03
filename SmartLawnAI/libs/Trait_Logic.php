@@ -136,6 +136,12 @@ trait SmartLawnAI_Logic {
             $this->SetBuffer('SperrzeitManualOff', '');
         }
 
+        // 3c. Aktuellen Durchfluss von SmartWaterMonitor aktualisieren
+        $wFlowID = $this->GetWaterMeterFlowRateVarID();
+        if ($wFlowID > 0 && IPS_VariableExists($wFlowID)) {
+            $this->SetValue('CurrentFlowRate', (float)GetValue($wFlowID));
+        }
+
         // Manueller Start
         $isManualStart = ($this->GetBuffer('CalculatePlanPending') === 'true');
         if ($isManualStart) {

@@ -116,32 +116,37 @@ class SmartLawnAI extends IPSModuleStrict {
         ], 206);
 
         // Wasserverbrauch-Variablen
+        $this->RegisterVariableFloat("CurrentFlowRate", "Aktueller Durchfluss", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'SUFFIX' => ' l/min',
+            'ICON' => 'Speedo'
+        ], 3);
         $this->RegisterVariableFloat("WaterLastSession", "Letzte Beregnung", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX' => ' L',
             'ICON' => 'Drops'
-        ], 3);
+        ], 4);
         $this->RegisterVariableFloat("WaterToday", "Heute",            [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX' => ' L',
             'ICON' => 'Drops'
-        ], 4);
+        ], 5);
         $this->RegisterVariableFloat("WaterThisWeek", "Diese Woche",      [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX' => ' L',
             'ICON' => 'Drops'
-        ], 5);
+        ], 6);
         $this->RegisterVariableFloat("WaterThisMonth", "Dieser Monat",     [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX' => ' L',
             'ICON' => 'Drops'
-        ], 6);
+        ], 7);
         
         $this->SetVisualizationType(1);
 
         // Wetter/Regen
-        $this->RegisterVariableFloat("ForecastRainToday", "Regen Heute", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Cloud'], 7);
-        $this->RegisterVariableFloat("ForecastRainTomorrow", "Regen Morgen", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Cloud'], 8);
+        $this->RegisterVariableFloat("ForecastRainToday", "Regen Heute", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Cloud'], 8);
+        $this->RegisterVariableFloat("ForecastRainTomorrow", "Regen Morgen", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Cloud'], 9);
 
         // Zonen (Hardware)
         $this->RegisterPropertyString('Zones', '[]');
@@ -295,8 +300,17 @@ class SmartLawnAI extends IPSModuleStrict {
             $this->SetValue('IrrigationLog', "Noch keine Bewässerungsvorgänge protokolliert.");
         }
 
+        $wFlowID = $this->GetWaterMeterFlowRateVarID();
+        if ($wFlowID > 0 && IPS_VariableExists($wFlowID)) {
+            $this->RegisterMessage($wFlowID, VM_UPDATE);
+            $this->SetValue('CurrentFlowRate', (float)GetValue($wFlowID));
+        } else {
+            $this->SetValue('CurrentFlowRate', 0.0);
+        }
+
         // Wasserverbrauch Archiv
         $waterVars = [
+            'CurrentFlowRate',
             'WaterLastSession',
             'WaterToday',
             'WaterThisWeek',
@@ -326,6 +340,14 @@ class SmartLawnAI extends IPSModuleStrict {
 
     public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void {
         if ($this->HandleCentralStateMessage($SenderID, $Message, $Data)) return;
+
+        if ($Message == VM_UPDATE) {
+            $wFlowID = $this->GetWaterMeterFlowRateVarID();
+            if ($wFlowID > 0 && $SenderID == $wFlowID) {
+                $this->SetValue('CurrentFlowRate', (float)$Data[0]);
+                return;
+            }
+        }
 
         if ($Message == IM_CHANGESTATUS) {
             $splitterID = $this->ReadPropertyInteger('GardenaSplitterID');

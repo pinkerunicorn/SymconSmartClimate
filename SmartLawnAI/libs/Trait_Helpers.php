@@ -221,13 +221,23 @@ trait SmartLawnAI_Helpers {
      * Gibt die ID der TotalConsumptionLiter-Variable des SmartWaterMonitors zurück.
      * SmartWaterMonitor GUID: {09A99311-87CD-480B-A7B8-6DC226136CFB}
      */
-    private function GetWaterMeterLiterVarID(): int
+    protected function GetWaterMeterLiterVarID(): int
     {
         $instID = $this->ReadPropertyInteger('WaterMonitorInstanceID');
         if ($instID <= 0 || !@IPS_InstanceExists($instID)) {
             return 0;
         }
         $varID = @IPS_GetObjectIDByIdent('TotalConsumptionLiter', $instID);
+        return ($varID !== false && $varID > 0) ? (int)$varID : 0;
+    }
+
+    protected function GetWaterMeterFlowRateVarID(): int
+    {
+        $instID = $this->ReadPropertyInteger('WaterMonitorInstanceID');
+        if ($instID <= 0 || !@IPS_InstanceExists($instID)) {
+            return 0;
+        }
+        $varID = @IPS_GetObjectIDByIdent('FlowRate', $instID);
         return ($varID !== false && $varID > 0) ? (int)$varID : 0;
     }
 

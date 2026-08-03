@@ -166,10 +166,13 @@ class SmartLawnAI extends IPSModuleStrict {
         } else if ($Ident === 'SperrzeitActive') {
             $this->SetValue($Ident, $Value);
             if ($Value) {
+                $this->SetBuffer('SperrzeitManualOff', '');
                 $this->AddLogEvent('Sperrzeit manuell aktiviert', 'Bewässerung blockiert bis zur manuellen Deaktivierung.', '#FF9800');
             } else {
+                $this->SetBuffer('SperrzeitManualOff', 'true');
                 $this->AddLogEvent('Sperrzeit manuell deaktiviert', 'Bewässerung wieder freigegeben.', '#4CAF50');
             }
+            $this->ProcessLogic(); // Status sofort aktualisieren
         } else if ($Ident === 'AutomaticActive') {
             $this->SetValue($Ident, $Value);
             $this->MaintainScheduleEvents($Value);

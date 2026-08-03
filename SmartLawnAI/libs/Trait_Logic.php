@@ -25,17 +25,7 @@ trait SmartLawnAI_Logic {
             }
         }
         
-        // Prüfen, ob wir uns in der Sperrzeit befinden (manuell oder zeitgesteuert)
-        $sperrzeitManuell = $this->GetValue('SperrzeitActive');
-        $sperrzeitZeit = $this->IsTimeForbidden(time());
-        
-        // Auto-Update: Zeitbasierte Sperrzeit setzt den Switch automatisch
-        if ($sperrzeitZeit && !$sperrzeitManuell) {
-            $this->SetValue('SperrzeitActive', true);
-        } elseif (!$sperrzeitZeit && $sperrzeitManuell) {
-            // Manuell aktiviert → bleibt aktiv, User muss selbst deaktivieren
-        }
-        
+        // Sperrzeit prüfen (Switch ist die einzige Wahrheit)
         if ($this->GetValue('SperrzeitActive')) {
             $this->LogAndDebug('Planer', 'Zyklusprüfung übersprungen: Sperrzeit aktiv.', 0);
             $this->AddLogEvent("Zyklusprüfung", "Sperrzeit aktiv. Keine automatische Bewässerung.", '#FF9800');
@@ -136,9 +126,14 @@ trait SmartLawnAI_Logic {
             $this->SetTimerInterval('LawnAITimer', 0);
         }
 
-        // 3b. Sperrzeit: automatisch aktivieren bei Zeitfenster-Eintritt
-        if ($this->IsTimeForbidden(time()) && !$this->GetValue('SperrzeitActive')) {
+        // 3b. Sperrzeit: Automatik nur wenn nicht manuell überschrieben
+        $zeitIstVerboten = $this->IsTimeForbidden(time());
+        if ($zeitIstVerboten && !$this->GetValue('SperrzeitActive') && $this->GetBuffer('SperrzeitManualOff') !== 'true') {
             $this->SetValue('SperrzeitActive', true);
+        }
+        // Buffer zurücksetzen wenn Zeitfenster verlassen wird
+        if (!$zeitIstVerboten && $this->GetBuffer('SperrzeitManualOff') === 'true') {
+            $this->SetBuffer('SperrzeitManualOff', '');
         }
 
         // Manueller Start
@@ -950,11 +945,13 @@ $result = GIO_Query(' . $geminiId . ',
             $times = [6, 18];
         }
         
+        // Sperrzeit nur berücksichtigen wenn der Switch aktiv ist
+        $sperrzeitAktiv = $this->GetValue('SperrzeitActive');
         for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
             $baseDay = $today + ($dayOffset * 86400);
             foreach ($times as $hour) {
                 $t = $baseDay + ($hour * 3600);
-                if ($t > $now && !$this->IsTimeForbidden($t)) {
+                if ($t > $now && (!$sperrzeitAktiv || !$this->IsTimeForbidden($t))) {
                     return $t;
                 }
             }

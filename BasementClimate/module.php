@@ -201,22 +201,13 @@ class BasementClimate extends IPSModuleStrict
             ])
         ], 13);
         
-        $alarmOptions = json_encode([
-            ['Value' => false, 'Caption' => 'OK', 'IconActive' => true, 'IconValue' => 'Ok', 'Color' => 0x00CC00],
-            ['Value' => true,  'Caption' => 'Alarm', 'IconActive' => true, 'IconValue' => 'Alert', 'Color' => 0xFF0000]
-        ]);
-
         $this->RegisterVariableBoolean("AlarmTankFull", "Alarm: Wassertank voll", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Drops',
-            'OPTIONS'      => $alarmOptions
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH
         ], 202);
         $this->EnableAction("AlarmTankFull");
         
         $this->RegisterVariableBoolean("AlarmWindowClose", "Alarm: Fenster schließen", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Alert',
-            'OPTIONS'      => $alarmOptions
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH
         ], 203);
         $this->EnableAction("AlarmWindowClose");
         

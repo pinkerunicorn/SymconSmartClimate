@@ -1,0 +1,13 @@
+{
+    "id": "{E43BAEE8-DBAE-45C6-964F-163451164077}",
+    "name": "SmartClimateZone",
+    "type": 3,
+    "vendor": "Florian Graßinger",
+    "aliases": [
+        "Smart Climate Zone"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "SCZ"
+}

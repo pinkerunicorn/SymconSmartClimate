@@ -1,0 +1,531 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../libs/Trait_SmartLog.php';
+require_once __DIR__ . '/../libs/Trait_ClimateCommon.php';
+
+class SmartClimateZone extends IPSModuleStrict
+{
+    use SmartLog_Trait;
+    use ClimateCommon_Trait;
+
+    public function Create(): void{
+        parent::Create();
+
+        // Feature Toggles
+        $this->RegisterPropertyBoolean("EnableHeating", false);
+        $this->RegisterPropertyBoolean("EnableFrostProtection", false);
+        $this->RegisterPropertyBoolean("EnableDehumidifier", false);
+        $this->RegisterPropertyBoolean("EnableAirQuality", false);
+
+        // Core Properties (Temperature / Humidity Inside & Outside)
+        $this->RegisterPropertyInteger("SensorTempInside", 0);
+        $this->RegisterPropertyInteger("SensorHumInside", 0);
+        $this->RegisterPropertyInteger("SensorTempOutside", 0);
+        $this->RegisterPropertyInteger("SensorHumOutside", 0);
+        $this->RegisterPropertyString("SensorWindows", "[]");
+        $this->RegisterPropertyFloat("VentilationThreshold", 0.5);
+        $this->RegisterPropertyFloat("VentilationCloseMargin", 0.3);
+
+        // Heating Properties
+        $this->RegisterPropertyInteger("ActuatorRadiator1", 0);
+        $this->RegisterPropertyInteger("ActuatorRadiator2", 0);
+        $this->RegisterPropertyFloat("TargetTemperature", 18.0);
+        
+        // Frost Protection Properties
+        $this->RegisterPropertyInteger("ActuatorHeaterPlug", 0);
+        $this->RegisterPropertyInteger("SensorHeaterPower", 0);
+        $this->RegisterPropertyFloat("Hysteresis", 0.5);
+        $this->RegisterPropertyFloat("HeaterPowerThreshold", 50.0);
+        $this->RegisterPropertyInteger("HeaterDefectTime", 300);
+        $this->RegisterPropertyFloat("FrostWarningTemp", 3.0);
+
+        // Dehumidifier Properties
+        $this->RegisterPropertyInteger("ActuatorDehumidifierPlug", 0);
+        $this->RegisterPropertyInteger("SensorDehumidifierPower", 0);
+        $this->RegisterPropertyFloat("DehumidifierMaxHum", 60.0);
+        $this->RegisterPropertyFloat("DehumidifierMinHum", 55.0);
+        $this->RegisterPropertyFloat("DehumidifierPowerThreshold", 10.0);
+        $this->RegisterPropertyInteger("DehumidifierPowerTime", 60);
+
+        // Air Quality Properties
+        $this->RegisterPropertyInteger("SensorRadonShortTerm", 0);
+        $this->RegisterPropertyInteger("SensorRadonLongTerm", 0);
+        $this->RegisterPropertyFloat("RadonWarningLevel", 300.0);
+        $this->RegisterPropertyFloat("RadonAlarmLevel",  1000.0);
+        
+        $this->RegisterPropertyInteger("SensorCO2", 0);
+        $this->RegisterPropertyFloat("CO2WarningLevel", 1000.0);
+        $this->RegisterPropertyFloat("CO2AlarmLevel",   2000.0);
+        
+        $this->RegisterPropertyInteger("SensorVOC", 0);
+        $this->RegisterPropertyFloat("VOCWarningLevel",  500.0);
+        $this->RegisterPropertyFloat("VOCAlarmLevel",   1500.0);
+        
+        // Timers
+        $this->RegisterTimer("PowerCheckTimer", 0, 'SCZ_CheckPowerThreshold($_IPS[\'TARGET\']);');
+        $this->RegisterTimer("HeaterDefectTimer", 0, 'SCZ_TriggerHeaterDefectAlarm($_IPS[\'TARGET\']);');
+
+        // Dynamic Variables based on Toggles (created in ApplyChanges)
+    }
+
+    public function ApplyChanges(): void{
+        parent::ApplyChanges();
+        
+        $sensorID = $this->ReadPropertyInteger('SensorTempInside');
+        if ($sensorID <= 0) {
+            $this->SetStatus(104);
+            return;
+        }
+
+        // Clean up references and messages
+        foreach ($this->GetReferenceList() as $refID) {
+            $this->UnregisterReference($refID);
+        }
+        $this->UnregisterAllMessages();
+
+        // 1. Core Registration
+        $this->RegisterSensorReferenceAndMessage('SensorTempInside');
+        $this->RegisterSensorReferenceAndMessage('SensorTempOutside');
+        $this->RegisterSensorReferenceAndMessage('SensorHumInside');
+        $this->RegisterSensorReferenceAndMessage('SensorHumOutside');
+        $this->RegisterWindowReferences();
+        $this->RegisterWindowMessages();
+        
+        $this->MaintainCoreVariables();
+
+        // 2. Heating
+        if ($this->ReadPropertyBoolean("EnableHeating")) {
+            $this->RegisterSensorReferenceAndMessage('ActuatorRadiator1', false);
+            $this->RegisterSensorReferenceAndMessage('ActuatorRadiator2', false);
+        }
+        
+        // 3. Frost Protection
+        if ($this->ReadPropertyBoolean("EnableFrostProtection")) {
+            $this->RegisterSensorReferenceAndMessage('ActuatorHeaterPlug', false);
+            $this->RegisterSensorReferenceAndMessage('SensorHeaterPower');
+            $this->MaintainFrostVariables(true);
+        } else {
+            $this->MaintainFrostVariables(false);
+        }
+
+        // 4. Dehumidifier
+        if ($this->ReadPropertyBoolean("EnableDehumidifier")) {
+            $this->RegisterSensorReferenceAndMessage('ActuatorDehumidifierPlug', false);
+            $this->RegisterSensorReferenceAndMessage('SensorDehumidifierPower');
+            $this->MaintainDehumidifierVariables(true);
+            
+            $defaultMax = $this->ReadPropertyFloat("DehumidifierMaxHum");
+            if ($defaultMax == 0.0) $defaultMax = 60.0;
+            if ($this->GetValue("DehumidifierMaxHum") == 0.0) $this->SetValue("DehumidifierMaxHum", $defaultMax);
+            
+            $defaultMin = $this->ReadPropertyFloat("DehumidifierMinHum");
+            if ($defaultMin == 0.0) $defaultMin = 55.0;
+            if ($this->GetValue("DehumidifierMinHum") == 0.0) $this->SetValue("DehumidifierMinHum", $defaultMin);
+        } else {
+            $this->MaintainDehumidifierVariables(false);
+        }
+        
+        // 5. Air Quality
+        if ($this->ReadPropertyBoolean("EnableAirQuality")) {
+            $this->RegisterSensorReferenceAndMessage('SensorRadonShortTerm');
+            $this->RegisterSensorReferenceAndMessage('SensorRadonLongTerm');
+            $this->RegisterSensorReferenceAndMessage('SensorCO2');
+            $this->RegisterSensorReferenceAndMessage('SensorVOC');
+            $this->MaintainAirQualityVariables(true);
+        } else {
+            $this->MaintainAirQualityVariables(false);
+        }
+        
+        $this->SetStatus(102);
+        $this->UpdateClimate();
+    }
+
+    private function RegisterSensorReferenceAndMessage(string $propName, bool $message = true): void {
+        $id = $this->ReadPropertyInteger($propName);
+        if ($id > 1 && @IPS_ObjectExists($id)) {
+            $this->RegisterReference($id);
+            if ($message && IPS_VariableExists($id)) {
+                $this->RegisterMessage($id, VM_UPDATE);
+            }
+        }
+    }
+
+    private function MaintainCoreVariables(): void {
+        $this->RegisterVariableBoolean("VentilationRecommendation", "Lüften empfohlen!", [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'          => 'Wind',
+            'COLOR'         => -1,
+            'CONTENT_COLOR' => -1,
+            'DISPLAY_TYPE'  => 0,
+            'PREVIEW_STYLE' => 1,
+            'SHOW_PREVIEW'  => true,
+            'OPTIONS'       => json_encode([
+                ['Value' => false, 'Caption' => 'Nein', 'IconValue' => 'Wind', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
+                ['Value' => true, 'Caption' => 'Lüften empfohlen', 'IconValue' => 'Wind', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF]
+            ])
+        ], 100);
+        $this->RegisterVariableString("VentilationDetails", "Hinweis", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Wind'
+        ], 101);
+        $this->RegisterVariableFloat("DewPointInside", "Taupunkt Innen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' °C','DECIMALPLACES' => 1], 1);
+        $this->RegisterVariableFloat("DewPointOutside", "Taupunkt Außen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' °C','DECIMALPLACES' => 1], 2);
+        $this->RegisterVariableFloat("AbsHumInside", "Absolute Feuchte Innen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' g/m³','DECIMALPLACES' => 2], 3);
+        $this->RegisterVariableFloat("AbsHumOutside", "Absolute Feuchte Außen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' g/m³','DECIMALPLACES' => 2], 4);
+        $this->RegisterVariableFloat("CurrentHumidity", "Aktuelle Luftfeuchtigkeit", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' %','DECIMALPLACES' => 1], 5);
+        
+        $this->RegisterVariableBoolean("AlarmWindowClose", "Alarm: Fenster schließen", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH], 203);
+        $this->EnableAction("AlarmWindowClose");
+    }
+
+    private function MaintainFrostVariables(bool $active): void {
+        if ($active) {
+            $this->RegisterVariableBoolean("WinterMode", "Winterbetrieb", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH, 'ICON' => 'Gear'], 200);
+            $this->EnableAction("WinterMode");
+            
+            $targetOptions = [];
+            for ($i = 2; $i <= 15; $i++) $targetOptions[] = ['Value' => $i, 'Caption' => $i . ' °C', 'IconActive' => true, 'IconValue' => 'Temperature', 'Color' => 0xFFFFFF];
+            $this->RegisterVariableInteger("TargetFrostTemperature", "Zieltemperatur Frostschutz", ['PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION, 'OPTIONS' => json_encode($targetOptions)], 201);
+            $this->EnableAction("TargetFrostTemperature");
+            
+            $heaterIntervals = json_encode([
+                ['IntervalMinValue' => 0, 'IntervalMaxValue' => 0, 'ConstantActive' => true, 'ConstantValue' => 'Aus', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Sleep', 'ColorActive' => false, 'ColorValue' => -1, 'ContentColorActive' => false, 'ContentColorValue' => -1],
+                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Heizt', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Flame', 'ColorActive' => true, 'ColorValue' => 0xFF6600, 'ContentColorActive' => false, 'ContentColorValue' => -1],
+                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Fehler', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Alert', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorValue' => -1]
+            ]);
+            $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => $heaterIntervals], 15);
+            $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH], 202);
+            $this->EnableAction("AlarmHeaterDefect");
+            $this->RegisterVariableBoolean("AlarmFrost", "Alarm: Kritischer Frost", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH], 204);
+            $this->EnableAction("AlarmFrost");
+            
+            IPS_SetVariableCustomProfile($this->GetIDForIdent('HeaterStatus'), '');
+        }
+    }
+
+    private function MaintainDehumidifierVariables(bool $active): void {
+        if ($active) {
+            $sliderPresentation = ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'ICON' => 'Drops', 'SUFFIX' => ' %', 'MIN' => 30, 'MAX' => 90, 'STEP' => 1, 'DECIMALPLACES' => 1];
+            $this->RegisterVariableFloat("DehumidifierMaxHum", "Einschaltschwelle (Max %)", $sliderPresentation, 210);
+            $this->EnableAction("DehumidifierMaxHum");
+            $this->RegisterVariableFloat("DehumidifierMinHum", "Ausschaltschwelle (Min %)", $sliderPresentation, 211);
+            $this->EnableAction("DehumidifierMinHum");
+            
+            $dehum = [
+                ['IntervalMinValue' => 0, 'IntervalMaxValue' => 0, 'ConstantActive' => true, 'ConstantValue' => 'Aus', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Sleep', 'ColorActive' => false, 'ColorValue' => -1, 'ContentColorActive' => false, 'ContentColorValue' => -1],
+                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Aktiv', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Drops', 'ColorActive' => true, 'ColorValue' => 0x0088FF, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Fenster offen', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Window', 'ColorActive' => true, 'ColorValue' => 0xFFCC00, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 3, 'IntervalMaxValue' => 3, 'ConstantActive' => true, 'ConstantValue' => 'Tank voll!', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Warning', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF]
+            ];
+            $this->RegisterVariableInteger("DehumidifierStatus", "Status Entfeuchter", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Drops', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($dehum)], 13);
+            $this->RegisterVariableBoolean("AlarmTankFull", "Alarm: Wassertank voll", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH], 212);
+            $this->EnableAction("AlarmTankFull");
+            
+            IPS_SetVariableCustomProfile($this->GetIDForIdent('DehumidifierStatus'), '');
+        }
+    }
+
+    private function MaintainAirQualityVariables(bool $active): void {
+        if ($active) {
+            $this->RegisterVariableFloat("RadonShortTerm", "Radon Kurzzeit", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Gauge', 'SUFFIX' => ' Bq/m³', 'DECIMALPLACES' => 0], 6);
+            $this->RegisterVariableFloat("RadonLongTerm", "Radon Langzeit", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Gauge', 'SUFFIX' => ' Bq/m³', 'DECIMALPLACES' => 0], 7);
+            
+            $radon = [
+                ['IntervalMinValue' => 0, 'IntervalMaxValue' => 0, 'ConstantActive' => true, 'ConstantValue' => 'Gut', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Ok', 'ColorActive' => true, 'ColorValue' => 0x00CC00, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Mittel', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Warning', 'ColorActive' => true, 'ColorValue' => 0xFFA500, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Hoch', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Alert', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 3, 'IntervalMaxValue' => 3, 'ConstantActive' => true, 'ConstantValue' => 'Sehr hoch', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Alert', 'ColorActive' => true, 'ColorValue' => 0xCC0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF]
+            ];
+            $this->RegisterVariableInteger("RadonStatus", "Radon Status", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Gauge', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($radon)], 8);
+            $this->RegisterVariableString("RadonRecommendation", "Radon Empfehlung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Gauge'], 102);
+            
+            $this->RegisterVariableFloat("CO2Value", "CO₂-Konzentration", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate', 'SUFFIX' => ' ppm', 'DECIMALPLACES' => 0], 9);
+            $co2 = [
+                ['IntervalMinValue' => 0, 'IntervalMaxValue' => 0, 'ConstantActive' => true, 'ConstantValue' => 'Gut', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Ok', 'ColorActive' => true, 'ColorValue' => 0x00CC00, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Mittel', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Warning', 'ColorActive' => true, 'ColorValue' => 0xFFA500, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Hoch', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Alert', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF]
+            ];
+            $this->RegisterVariableInteger("CO2Status", "CO₂ Status", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($co2)], 10);
+            $this->RegisterVariableString("CO2Recommendation", "CO₂ Empfehlung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate'], 103);
+            
+            $this->RegisterVariableFloat("VOCValue", "VOC-Konzentration", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate', 'SUFFIX' => ' µg/m³', 'DECIMALPLACES' => 0], 11);
+            $this->RegisterVariableInteger("VOCStatus", "VOC Status", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($co2)], 12);
+            $this->RegisterVariableString("VOCRecommendation", "VOC Empfehlung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate'], 104);
+            
+            IPS_SetVariableCustomProfile($this->GetIDForIdent('RadonStatus'), '');
+            IPS_SetVariableCustomProfile($this->GetIDForIdent('CO2Status'), '');
+            IPS_SetVariableCustomProfile($this->GetIDForIdent('VOCStatus'), '');
+        }
+    }
+
+    public function RequestAction(string $Ident, mixed $Value): void{
+        switch ($Ident) {
+            case "AlarmTankFull":
+            case "AlarmWindowClose":
+            case "AlarmHeaterDefect":
+            case "AlarmFrost":
+                if ($Value == false) {
+                    $this->SetValue($Ident, false);
+                    $this->UpdateClimate();
+                }
+                break;
+            case "DehumidifierMaxHum":
+            case "DehumidifierMinHum":
+            case "WinterMode":
+            case "TargetFrostTemperature":
+                $this->SetValue($Ident, $Value);
+                $this->UpdateClimate();
+                break;
+            default:
+                throw new Exception("Invalid Ident");
+        }
+    }
+
+    public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void{
+        $powerIdDehum = $this->ReadPropertyInteger("SensorDehumidifierPower");
+        $powerIdHeat  = $this->ReadPropertyInteger("SensorHeaterPower");
+        $radonShortId = $this->ReadPropertyInteger("SensorRadonShortTerm");
+        $radonLongId  = $this->ReadPropertyInteger("SensorRadonLongTerm");
+        $co2Id        = $this->ReadPropertyInteger("SensorCO2");
+        $vocId        = $this->ReadPropertyInteger("SensorVOC");
+        
+        if ($this->ReadPropertyBoolean("EnableDehumidifier") && $SenderID == $powerIdDehum) {
+            $this->HandleDehumidifierPowerUpdate($Data[0]);
+        } elseif ($this->ReadPropertyBoolean("EnableFrostProtection") && $SenderID == $powerIdHeat) {
+            $this->HandleHeaterPowerUpdate($Data[0]);
+        } elseif ($this->ReadPropertyBoolean("EnableAirQuality") && $radonShortId > 0 && $SenderID == $radonShortId) {
+            $this->SetValueIfChanged("RadonShortTerm", (float) $Data[0]);
+        } elseif ($this->ReadPropertyBoolean("EnableAirQuality") && $radonLongId > 0 && $SenderID == $radonLongId) {
+            $this->SetValueIfChanged("RadonLongTerm", (float) $Data[0]);
+        } elseif ($this->ReadPropertyBoolean("EnableAirQuality") && $co2Id > 0 && $SenderID == $co2Id) {
+            $this->SetValueIfChanged("CO2Value", (float) $Data[0]);
+        } elseif ($this->ReadPropertyBoolean("EnableAirQuality") && $vocId > 0 && $SenderID == $vocId) {
+            $this->SetValueIfChanged("VOCValue", (float) $Data[0]);
+        } else {
+            $this->UpdateClimate();
+        }
+    }
+
+    public function UpdateClimate(): void
+    {
+        $tempOut = $this->GetPropertyVarValue("SensorTempOutside");
+        $humOut  = $this->GetPropertyVarValue("SensorHumOutside");
+        $tempIn  = $this->GetPropertyVarValue("SensorTempInside");
+        $humIn   = $this->GetPropertyVarValue("SensorHumInside");
+        
+        $windowOpen = $this->AnyWindowOpen();
+        
+        if ($tempOut !== null && $humOut !== null && $tempIn !== null && $humIn !== null) {
+            $absOut = $this->CalculateAbsoluteHumidity($tempOut, $humOut);
+            $dpOut  = $this->CalculateDewPoint($tempOut, $humOut);
+            $absIn  = $this->CalculateAbsoluteHumidity($tempIn, $humIn);
+            $dpIn   = $this->CalculateDewPoint($tempIn, $humIn);
+            
+            $this->SetValue("AbsHumOutside", $absOut);
+            $this->SetValue("DewPointOutside", $dpOut);
+            $this->SetValue("AbsHumInside", $absIn);
+            $this->SetValue("DewPointInside", $dpIn);
+            $this->SetValue("CurrentHumidity", $humIn);
+            
+            // Ventilation logic
+            $threshold   = $this->ReadPropertyFloat("VentilationThreshold");
+            $closeMargin = $this->ReadPropertyFloat("VentilationCloseMargin");
+            $recommendation = false;
+            $closeAlarm     = false;
+            $details        = "Keine Aktion erforderlich.";
+            
+            if (!$windowOpen) {
+                if ($absOut <= ($absIn - $threshold)) {
+                    $recommendation = true;
+                    $details = sprintf("Lüften empfohlen! Außen ist trockener (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
+                } else {
+                    $details = sprintf("Lüften lohnt nicht (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
+                }
+                $this->SetValueIfChanged("AlarmWindowClose", false);
+            } else {
+                if ($absOut >= ($absIn - $closeMargin)) {
+                    $closeAlarm = true;
+                    if ($absOut >= $absIn) {
+                        $details = sprintf("Fenster SCHLIESSEN! Außen wird es feuchter (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
+                    } else {
+                        $details = sprintf("Achtung: Fenster bald schließen! Außenfeuchte nähert sich der Innenfeuchte.", $absOut, $absIn);
+                    }
+                } else {
+                    $details = sprintf("Lüften trocknet weiterhin (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
+                }
+                if ($closeAlarm) {
+                    $this->SetValueIfChanged("AlarmWindowClose", true);
+                }
+            }
+            
+            $this->SetValueIfChanged("VentilationRecommendation", $recommendation);
+            $this->SetValueIfChanged("VentilationDetails", $details);
+        }
+        
+        if ($this->ReadPropertyBoolean("EnableDehumidifier") && $humIn !== null) {
+            $this->ControlDehumidifier($humIn, $windowOpen);
+        }
+        if ($this->ReadPropertyBoolean("EnableHeating") && $humIn !== null) {
+            $this->ControlHeating($humIn);
+        }
+        if ($this->ReadPropertyBoolean("EnableFrostProtection") && $tempIn !== null) {
+            $this->ControlFrostProtection($tempIn, $windowOpen);
+        }
+    }
+    
+    private function ControlHeating(float $humIn): void {
+        $rad1 = $this->ReadPropertyInteger("ActuatorRadiator1");
+        $rad2 = $this->ReadPropertyInteger("ActuatorRadiator2");
+        $targetBase = $this->ReadPropertyFloat("TargetTemperature");
+        
+        $targetTemp = $targetBase;
+        if ($humIn > 70.0) $targetTemp += 2.0;
+        
+        if ($rad1 > 0 && IPS_VariableExists($rad1) && GetValue($rad1) != $targetTemp) {
+            @RequestAction($rad1, $targetTemp);
+        }
+        if ($rad2 > 0 && IPS_VariableExists($rad2) && GetValue($rad2) != $targetTemp) {
+            @RequestAction($rad2, $targetTemp);
+        }
+    }
+    
+    private function ControlFrostProtection(float $tempIn, bool $windowOpen): void {
+        $winterMode = $this->GetValue("WinterMode");
+        if (!$winterMode) {
+            $this->SetHeaterPlug(false, 0);
+            return;
+        }
+        
+        if ($windowOpen) {
+            $this->SetHeaterPlug(false, 0);
+            return;
+        }
+        
+        $targetTemp = $this->GetValue("TargetFrostTemperature");
+        $hysteresis = $this->ReadPropertyFloat("Hysteresis");
+        $warningTemp = $this->ReadPropertyFloat("FrostWarningTemp");
+        
+        $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
+        if ($plugId == 0 || !IPS_VariableExists($plugId)) return;
+        
+        $isHeating = GetValue($plugId);
+        $newHeatingState = $isHeating;
+        
+        if ($tempIn <= ($targetTemp - $hysteresis)) {
+            $newHeatingState = true;
+        } elseif ($tempIn >= ($targetTemp + $hysteresis)) {
+            $newHeatingState = false;
+        }
+        
+        if ($tempIn <= $warningTemp) {
+            $this->SetValueIfChanged("AlarmFrost", true);
+            $this->SLogWarning("KRITISCHER FROST!", "Temperatur ist auf {$tempIn}°C gefallen (Warnschwelle: {$warningTemp}°C)");
+        }
+        
+        $defectAlarm = $this->GetValue("AlarmHeaterDefect");
+        $statusText = $defectAlarm ? 2 : ($newHeatingState ? 1 : 0);
+        $this->SetHeaterPlug($newHeatingState, $statusText);
+    }
+    
+    private function SetHeaterPlug(bool $state, int $statusText): void {
+        $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
+        if ($plugId > 0 && IPS_VariableExists($plugId)) {
+            if (GetValue($plugId) != $state) {
+                @RequestAction($plugId, $state);
+            }
+        }
+        $this->SetValueIfChanged("HeaterStatus", $statusText);
+    }
+    
+    private function HandleHeaterPowerUpdate(float $power): void {
+        $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
+        if ($plugId == 0 || !IPS_VariableExists($plugId)) return;
+        
+        $threshold = $this->ReadPropertyFloat("HeaterPowerThreshold");
+        $defectTime = $this->ReadPropertyInteger("HeaterDefectTime");
+        
+        if (GetValue($plugId)) {
+            if ($power < $threshold) {
+                if ($this->GetTimerInterval("HeaterDefectTimer") == 0 && !$this->GetValue("AlarmHeaterDefect")) {
+                    $this->SetTimerInterval("HeaterDefectTimer", $defectTime * 1000);
+                }
+            } else {
+                $this->StopTimer("HeaterDefectTimer");
+                if ($this->GetValue("AlarmHeaterDefect")) {
+                    $this->SetValue("AlarmHeaterDefect", false);
+                    $this->UpdateClimate();
+                }
+            }
+        } else {
+            $this->StopTimer("HeaterDefectTimer");
+        }
+    }
+    
+    public function CheckPowerThreshold(): void {
+        $this->StopTimer("PowerCheckTimer");
+        $this->SetValue("AlarmTankFull", true);
+        $this->UpdateClimate();
+    }
+    
+    public function TriggerHeaterDefectAlarm(): void {
+        $this->StopTimer("HeaterDefectTimer");
+        $this->SetValue("AlarmHeaterDefect", true);
+        $this->UpdateClimate();
+        $this->SLogWarning("Heizung defekt!", "Die Heizung ist eingeschaltet, zieht aber keinen Strom!");
+    }
+
+    private function ControlDehumidifier(float $humIn, bool $windowOpen): void {
+        $plugId = $this->ReadPropertyInteger("ActuatorDehumidifierPlug");
+        if ($plugId == 0 || !IPS_VariableExists($plugId)) return;
+        
+        $maxHum   = $this->GetValue("DehumidifierMaxHum");
+        $minHum   = $this->GetValue("DehumidifierMinHum");
+        $tankFull = $this->GetValue("AlarmTankFull");
+        
+        $plugStatus = GetValue($plugId);
+        $newStatus  = $plugStatus;
+        $statusText = 0; 
+        
+        if ($windowOpen) {
+            $newStatus  = false;
+            $statusText = 2;
+        } else {
+            if ($humIn >= $maxHum) $newStatus = true;
+            elseif ($humIn <= $minHum) $newStatus = false;
+            $statusText = $tankFull ? 3 : ($newStatus ? 1 : 0);
+        }
+        
+        if ($plugStatus != $newStatus) {
+            @RequestAction($plugId, $newStatus);
+        }
+        
+        $this->SetValueIfChanged("DehumidifierStatus", $statusText);
+        $this->SetValueIfChanged("AlarmTankFull", $tankFull);
+    }
+    
+    private function HandleDehumidifierPowerUpdate(float $currentPower): void {
+        $plugId = $this->ReadPropertyInteger("ActuatorDehumidifierPlug");
+        if ($plugId == 0 || !IPS_VariableExists($plugId)) return;
+        
+        $threshold  = $this->ReadPropertyFloat("DehumidifierPowerThreshold");
+        $timeLimit  = $this->ReadPropertyInteger("DehumidifierPowerTime");
+        
+        if (GetValue($plugId)) {
+            if ($currentPower < $threshold) {
+                if ($this->GetTimerInterval("PowerCheckTimer") == 0 && !$this->GetValue("AlarmTankFull")) {
+                    $this->SetTimerInterval("PowerCheckTimer", $timeLimit * 1000);
+                }
+            } else {
+                $this->StopTimer("PowerCheckTimer");
+                if ($this->GetValue("AlarmTankFull")) {
+                    $this->SetValue("AlarmTankFull", false);
+                    $this->UpdateClimate();
+                }
+            }
+        } else {
+            $this->StopTimer("PowerCheckTimer");
+        }
+    }
+}

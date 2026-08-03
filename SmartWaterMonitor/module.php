@@ -175,14 +175,11 @@ class SmartWaterMonitor extends IPSModuleStrict
                     if ($value == 0 || $currentFlow == 0) {
                         $smoothedValue = $value;
                     } else {
-                        // Smoothing-Faktor (Alpha). Kleiner = weicher, Größer = schneller
-                        $alpha = 0.2;
-                        
-                        // Wenn die Abweichung extrem groß ist, schneller reagieren (dynamisches Alpha)
-                        $diff = abs($value - $currentFlow);
-                        if ($diff > ($currentFlow * 0.3)) {
-                            $alpha = 0.6; // Schneller anpassen bei großen Sprüngen
-                        }
+                        // Extrem starke Glättung (Alpha = 0.05)
+                        // 5% neuer Wert, 95% alter Wert.
+                        // Die dynamische Sprungerkennung wurde entfernt, da das Signal
+                        // anscheinend naturbedingt stark schwankt (z.B. 30 -> 45 -> 30).
+                        $alpha = 0.05;
                         
                         $smoothedValue = ($value * $alpha) + ($currentFlow * (1.0 - $alpha));
                     }

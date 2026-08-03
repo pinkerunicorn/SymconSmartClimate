@@ -93,19 +93,52 @@ class FireplaceSafety extends IPSModuleStrict
             'SUFFIX' => ' °C'
         ], 5);
         
-        $woodOptions = json_encode([
-            ['Value' => false, 'Caption' => 'Ausreichend', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
-            ['Value' => true, 'Caption' => 'Nachlegen!', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFFA500, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFA500]
+        $woodIntervals = json_encode([
+            [
+                'IntervalMinValue' => 0, 'IntervalMaxValue' => 0,
+                'ConstantActive' => true, 'ConstantValue' => 'Aus',
+                'ConversionFactor' => 1,
+                'PrefixActive' => false, 'PrefixValue' => '',
+                'SuffixActive' => false, 'SuffixValue' => '',
+                'DigitsActive' => false, 'DigitsValue' => 0,
+                'IconActive' => true, 'IconValue' => 'Sleep',
+                'ColorActive' => false, 'ColorValue' => -1,
+                'ContentColorActive' => false, 'ContentColorValue' => -1
+            ],
+            [
+                'IntervalMinValue' => 1, 'IntervalMaxValue' => 1,
+                'ConstantActive' => true, 'ConstantValue' => 'Ausreichend',
+                'ConversionFactor' => 1,
+                'PrefixActive' => false, 'PrefixValue' => '',
+                'SuffixActive' => false, 'SuffixValue' => '',
+                'DigitsActive' => false, 'DigitsValue' => 0,
+                'IconActive' => true, 'IconValue' => 'Flame',
+                'ColorActive' => true, 'ColorValue' => 0x00CC00,
+                'ContentColorActive' => false, 'ContentColorValue' => -1
+            ],
+            [
+                'IntervalMinValue' => 2, 'IntervalMaxValue' => 2,
+                'ConstantActive' => true, 'ConstantValue' => 'Nachlegen!',
+                'ConversionFactor' => 1,
+                'PrefixActive' => false, 'PrefixValue' => '',
+                'SuffixActive' => false, 'SuffixValue' => '',
+                'DigitsActive' => false, 'DigitsValue' => 0,
+                'IconActive' => true, 'IconValue' => 'Flame',
+                'ColorActive' => true, 'ColorValue' => 0xFFA500,
+                'ContentColorActive' => false, 'ContentColorValue' => -1
+            ]
         ]);
-        $this->RegisterVariableBoolean("WoodRefillNeeded", "Bitte Holz nachlegen", [
+        
+        $varId = @$this->GetIDForIdent("WoodRefillNeeded");
+        if ($varId && IPS_GetVariable($varId)['VariableType'] !== 1) {
+            $this->UnregisterVariable("WoodRefillNeeded");
+        }
+
+        $this->RegisterVariableInteger("WoodRefillNeeded", "Bitte Holz nachlegen", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON' => 'Flame',
-            'COLOR' => -1,
-            'CONTENT_COLOR' => -1,
-            'DISPLAY_TYPE' => 0,
-            'PREVIEW_STYLE' => 1,
-            'SHOW_PREVIEW' => true,
-            'OPTIONS' => $woodOptions
+            'INTERVALS_ACTIVE' => true,
+            'INTERVALS' => $woodIntervals
         ], 100);
         $this->RegisterVariableInteger("FiredCount", "Anzahl Angefeuert", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
@@ -225,8 +258,9 @@ class FireplaceSafety extends IPSModuleStrict
             }
 
             // Peak-Tracking und "Nachlegen"-Logik
-            $refillNeeded = false;
+            $refillState = 0; // 0 = Aus
             if ($isOvenOn) {
+                $refillState = 1; // 1 = Ausreichend
                 $peak = (float)$this->GetValue("OvenPeakTemp");
                 if ($tOven > $peak) {
                     $peak = $tOven;
@@ -234,16 +268,16 @@ class FireplaceSafety extends IPSModuleStrict
                 }
                 if ($peak > 0 && $tOven <= ($peak - $this->ReadPropertyFloat("PeakDropThreshold"))) {
                     if ($tRoom < $this->ReadPropertyFloat("MaxRoomTemp")) {
-                        $refillNeeded = true;
+                        $refillState = 2; // 2 = Nachlegen!
                     }
                 }
             } else {
                 $this->SetValueIfChanged("OvenPeakTemp", 0.0); // Trait
             }
-            $this->SetValueIfChanged("WoodRefillNeeded", $refillNeeded); // Trait
+            $this->SetValueIfChanged("WoodRefillNeeded", $refillState); // Trait
         } else {
             $this->SetValueIfChanged("OvenPeakTemp", 0.0);    // Trait
-            $this->SetValueIfChanged("WoodRefillNeeded", false); // Trait
+            $this->SetValueIfChanged("WoodRefillNeeded", 0); // Trait
         }
 
         if ($isOvenOn && !$wasOvenOn) {

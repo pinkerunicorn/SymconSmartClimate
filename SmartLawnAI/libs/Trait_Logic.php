@@ -25,28 +25,21 @@ trait SmartLawnAI_Logic {
             }
         }
         
-        // Prüfen, ob wir uns in der Sperrzeit befinden
-        $fStart = $this->GetTimeAsString('ForbiddenStartTime');
-        $fEnd = $this->GetTimeAsString('ForbiddenEndTime');
-        if ($fStart !== $fEnd) {
-            $now = time();
-            $start = strtotime($fStart);
-            $end = strtotime($fEnd);
-            
-            // Falls Endzeit am nächsten Tag liegt (z.B. 22:00 bis 06:00)
-            if ($end < $start) {
-                if ($now >= $start || $now <= $end) {
-                    $this->LogAndDebug('Planer', 'Zyklusprüfung übersprungen: Aktuelle Uhrzeit liegt innerhalb der Sperrzeit.', 0);
-                    $this->AddLogEvent("Zyklusprüfung", "Sperrzeit aktiv. Keine automatische Bewässerung.", '#FF9800');
-                    return;
-                }
-            } else {
-                if ($now >= $start && $now <= $end) {
-                    $this->LogAndDebug('Planer', 'Zyklusprüfung übersprungen: Aktuelle Uhrzeit liegt innerhalb der Sperrzeit.', 0);
-                    $this->AddLogEvent("Zyklusprüfung", "Sperrzeit aktiv. Keine automatische Bewässerung.", '#FF9800');
-                    return;
-                }
-            }
+        // Prüfen, ob wir uns in der Sperrzeit befinden (manuell oder zeitgesteuert)
+        $sperrzeitManuell = $this->GetValue('SperrzeitActive');
+        $sperrzeitZeit = $this->IsTimeForbidden(time());
+        
+        // Auto-Update: Zeitbasierte Sperrzeit setzt den Switch automatisch
+        if ($sperrzeitZeit && !$sperrzeitManuell) {
+            $this->SetValue('SperrzeitActive', true);
+        } elseif (!$sperrzeitZeit && $sperrzeitManuell) {
+            // Manuell aktiviert → bleibt aktiv, User muss selbst deaktivieren
+        }
+        
+        if ($this->GetValue('SperrzeitActive')) {
+            $this->LogAndDebug('Planer', 'Zyklusprüfung übersprungen: Sperrzeit aktiv.', 0);
+            $this->AddLogEvent("Zyklusprüfung", "Sperrzeit aktiv. Keine automatische Bewässerung.", '#FF9800');
+            return;
         }
 
         $defaultStart = GetValue($this->GetIDForIdent('DefaultStartSchwellwert'));
@@ -143,8 +136,10 @@ trait SmartLawnAI_Logic {
             $this->SetTimerInterval('LawnAITimer', 0);
         }
 
-        // 3b. Sperrzeit-Indikator aktualisieren
-        $this->SetValue('SperrzeitActive', $this->IsTimeForbidden(time()));
+        // 3b. Sperrzeit: automatisch aktivieren bei Zeitfenster-Eintritt
+        if ($this->IsTimeForbidden(time()) && !$this->GetValue('SperrzeitActive')) {
+            $this->SetValue('SperrzeitActive', true);
+        }
 
         // Manueller Start
         $isManualStart = ($this->GetBuffer('CalculatePlanPending') === 'true');

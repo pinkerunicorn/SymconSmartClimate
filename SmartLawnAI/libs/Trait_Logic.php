@@ -86,14 +86,15 @@ trait SmartLawnAI_Logic {
             return; 
         }
 
-        // 1. Prüfen, ob bereits ein Ventil aktiv ist oder Zonen in der Warteschlange stehen
+        // Zustände, die eine aktive oder startende Zone signalisieren
+        $aktiveStatus = ['WATERING', 'WAITING_FOR_OPEN', 'WAITING_FOR_RESULT'];
         $einVentilIstAktiv = false;
         $anyQueued = false;
         foreach ($zones as $zone) {
             $status = $this->GetZoneStatus($zone['SensorID']);
-            if ($status === 'WATERING') {
+            if (in_array($status, $aktiveStatus)) {
                 $einVentilIstAktiv = true;
-                $this->LogAndDebug('Sequencer', 'Ein anderes Ventil blockiert die Sequenz ('. $status . 'bei Zone '. $zone['SensorID'] . '). Warte...', 0);
+                $this->LogAndDebug('Sequencer', 'Ein anderes Ventil blockiert die Sequenz ('. $status . ' bei Zone '. $zone['SensorID'] . '). Warte...', 0);
             }
             if ($status === 'QUEUED') {
                 $anyQueued = true;
@@ -156,7 +157,7 @@ trait SmartLawnAI_Logic {
             $einVentilIstAktiv = false;
             foreach ($zones as $zone) {
                 $status = $this->GetZoneStatus($zone['SensorID']);
-                if ($status === 'WATERING') {
+                if (in_array($status, $aktiveStatus)) {
                     $einVentilIstAktiv = true;
                 }
             }

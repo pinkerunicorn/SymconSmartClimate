@@ -96,7 +96,7 @@ class SmartLawnAI extends IPSModuleStrict {
             ['Value' => false, 'Caption' => 'Inaktiv', 'IconValue' => 'Drops', 'IconActive' => false,
              'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false,
              'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
-            ['Value' => true, 'Caption' => 'Bewaessert', 'IconValue' => 'Drops', 'IconActive' => true,
+            ['Value' => true, 'Caption' => 'Bewässert', 'IconValue' => 'Drops', 'IconActive' => true,
              'ColorActive' => true, 'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false,
              'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF]
         ]);

@@ -34,7 +34,6 @@ class GardenHouseClimate extends IPSModuleStrict
             'ICON'         => 'Gear'
         ], 200);
         $this->EnableAction("WinterMode");
-        $this->SetValue("WinterMode", true); // Default to true
         
         $targetOptions = [];
         for ($i = 2; $i <= 15; $i++) {

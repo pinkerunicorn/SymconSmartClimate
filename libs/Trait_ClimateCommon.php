@@ -154,32 +154,53 @@ trait ClimateCommon_Trait
     // ─────────────────────────────────────────────────────────────────
 
     /**
-     * Setzt die Custom Presentation einer bool-Alarm-Variablen (Symcon 8+).
+     * Erzeugt die OPTIONS für eine bool-Alarm-Variable (Symcon 8+).
      * Rot (oder eigene Farbe) bei true, grün bei false.
+     * Rückgabe als JSON-String für inline Registration bei RegisterVariableBoolean.
      *
-     * @param string $ident        Variablen-Ident
+     * Verwendung:
+     *   $this->RegisterVariableBoolean('Alarm', 'Alarm', [
+     *       'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+     *       'ICON'         => 'Warning',
+     *       'OPTIONS'      => $this->BuildAlarmOptions('Alarm!', 'OK'),
+     *   ], 10);
+     *
      * @param string $alarmCaption Text wenn Alarm aktiv (true)
      * @param string $okCaption    Text wenn kein Alarm (false), Standard: 'OK'
      * @param int    $alarmColor   Farbe für Alarm-Zustand, Standard: Rot 0xFF0000
+     * @return string JSON-kodiertes OPTIONS-Array
      */
-    protected function SetupAlarmPresentation(
-        string $ident,
+    protected function BuildAlarmOptions(
         string $alarmCaption,
         string $okCaption = 'OK',
         int    $alarmColor = 0xFF0000
-    ): void {
-        if (function_exists('IPS_SetVariableCustomPresentation')) {
-            if (@IPS_GetObjectIDByIdent($ident, $this->InstanceID) !== false) {
-                IPS_SetVariableCustomPresentation($this->GetIDForIdent($ident), [
-                    'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
-                    'ICON'         => 'Warning',
-                    'ONCOLOR'      => $alarmColor,
-                    'OFFCOLOR'     => 0x00FF00,
-                    'ONCAPTION'    => $alarmCaption,
-                    'OFFCAPTION'   => $okCaption
-                ]);
-            }
-        }
+    ): string {
+        return json_encode([
+            [
+                'Value'               => false,
+                'Caption'             => $okCaption,
+                'IconValue'           => 'Ok',
+                'IconActive'          => true,
+                'ColorActive'         => true,
+                'ColorDisplay'        => 0x00CC00,
+                'ColorValue'          => 0x00CC00,
+                'ContentColorActive'  => true,
+                'ContentColorDisplay' => 0xFFFFFF,
+                'ContentColorValue'   => 0xFFFFFF
+            ],
+            [
+                'Value'               => true,
+                'Caption'             => $alarmCaption,
+                'IconValue'           => 'Warning',
+                'IconActive'          => true,
+                'ColorActive'         => true,
+                'ColorDisplay'        => $alarmColor,
+                'ColorValue'          => $alarmColor,
+                'ContentColorActive'  => true,
+                'ContentColorDisplay' => 0xFFFFFF,
+                'ContentColorValue'   => 0xFFFFFF
+            ]
+        ]);
     }
 
     // ─────────────────────────────────────────────────────────────────

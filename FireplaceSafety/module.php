@@ -82,8 +82,9 @@ class FireplaceSafety extends IPSModuleStrict
         ], 4);
         
         $this->RegisterVariableBoolean("AlarmOvenDoor", "Alarm Ofentür", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
-            'ICON' => 'Warning'
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Warning',
+            'OPTIONS'      => $this->BuildAlarmOptions('ALARM: Ofentür offen!', 'OK'),
         ], 200);
         $this->EnableAction("AlarmOvenDoor"); // Quittierbar per Webfront
 
@@ -181,9 +182,7 @@ class FireplaceSafety extends IPSModuleStrict
         $this->RegisterWindowReferences(); // Trait
         // ---------------------------------
 
-        // Presentations (Symcon 8+)
-        // Alarm-Variablen via Trait (Switch mit Farben)
-        $this->SetupAlarmPresentation('AlarmOvenDoor',     'ALARM: Ofentür offen!');
+
 
         // Messages neu registrieren (Trait)
         $this->UnregisterAllMessages();

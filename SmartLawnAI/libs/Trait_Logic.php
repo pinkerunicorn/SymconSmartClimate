@@ -25,8 +25,8 @@ trait SmartLawnAI_Logic {
             }
         }
         
-        // Sperrzeit prüfen (Switch ist die einzige Wahrheit)
-        if ($this->GetValue('SperrzeitActive')) {
+        // Sperrzeit prüfen (Switch aktiviert die Funktion, IsTimeForbidden prüft die aktuelle Zeit)
+        if ($this->GetValue('SperrzeitActive') && $this->IsTimeForbidden(time())) {
             $this->LogAndDebug('Planer', 'Zyklusprüfung übersprungen: Sperrzeit aktiv.', 0);
             $this->AddLogEvent("Zyklusprüfung", "Sperrzeit aktiv. Keine automatische Bewässerung.", '#FF9800');
             return;

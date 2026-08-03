@@ -94,19 +94,29 @@ class GardenHouseClimate extends IPSModuleStrict
             'INTERVALS'       => $heaterIntervals
         ], 1);
         
-        // Alarms
+        $alarmOptions = json_encode([
+            ['Value' => false, 'Caption' => 'OK', 'IconActive' => true, 'IconValue' => 'Ok', 'Color' => 0x00CC00],
+            ['Value' => true,  'Caption' => 'Alarm', 'IconActive' => true, 'IconValue' => 'Alert', 'Color' => 0xFF0000]
+        ]);
+
         $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Alert',
+            'OPTIONS'      => $alarmOptions
         ], 202);
         $this->EnableAction("AlarmHeaterDefect");
         
         $this->RegisterVariableBoolean("AlarmFrost", "Alarm: Kritischer Frost", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Alert',
+            'OPTIONS'      => $alarmOptions
         ], 203);
         $this->EnableAction("AlarmFrost");
         
         $this->RegisterVariableBoolean("AlarmWindowOpen", "Alarm: Fenster offen (Winter)", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Alert',
+            'OPTIONS'      => $alarmOptions
         ], 204);
         $this->EnableAction("AlarmWindowOpen");
         

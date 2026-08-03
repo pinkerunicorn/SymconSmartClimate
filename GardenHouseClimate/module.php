@@ -21,7 +21,6 @@ class GardenHouseClimate extends IPSModuleStrict
         $this->RegisterPropertyInteger("ActuatorHeaterPlug", 0);
         $this->RegisterPropertyInteger("SensorHeaterPower", 0);
         
-        $this->RegisterPropertyFloat("TargetTemperature", 5.0);
         $this->RegisterPropertyFloat("Hysteresis", 0.5);
         
         $this->RegisterPropertyFloat("HeaterPowerThreshold", 50.0);
@@ -37,23 +36,62 @@ class GardenHouseClimate extends IPSModuleStrict
         $this->EnableAction("WinterMode");
         $this->SetValue("WinterMode", true); // Default to true
         
-        $this->RegisterVariableFloat("TargetTemperature", "Zieltemperatur Frostschutz", [
-            'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'          => 'Temperature',
-            'SUFFIX'        => ' °C',
-            'DECIMALPLACES' => 1
+        $targetOptions = [];
+        for ($i = 2; $i <= 15; $i++) {
+            $targetOptions[] = [
+                'Value' => $i,
+                'Caption' => $i . ' °C',
+                'IconActive' => true,
+                'IconValue' => 'Temperature',
+                'Color' => 0xFFFFFF
+            ];
+        }
+        $this->RegisterVariableInteger("TargetTemperature", "Zieltemperatur Frostschutz", [
+            'PRESENTATION'  => VARIABLE_PRESENTATION_ENUMERATION,
+            'OPTIONS'       => json_encode($targetOptions)
         ], 201);
         $this->EnableAction("TargetTemperature");
         
-        $heaterPresentation = json_encode([
-            ['Value' => 0, 'Caption' => 'Aus', 'IconValue' => 'Sleep', 'ColorValue' => -1],
-            ['Value' => 1, 'Caption' => 'Heizt', 'IconValue' => 'Flame', 'ColorValue' => 0xFF6600],
-            ['Value' => 2, 'Caption' => 'Fehler', 'IconValue' => 'Alert', 'ColorValue' => 0xFF0000]
+        $heaterIntervals = json_encode([
+            [
+                'IntervalMinValue' => 0, 'IntervalMaxValue' => 0,
+                'ConstantActive' => true, 'ConstantValue' => 'Aus',
+                'ConversionFactor' => 1,
+                'PrefixActive' => false, 'PrefixValue' => '',
+                'SuffixActive' => false, 'SuffixValue' => '',
+                'DigitsActive' => false, 'DigitsValue' => 0,
+                'IconActive' => true, 'IconValue' => 'Sleep',
+                'ColorActive' => false, 'ColorValue' => 0,
+                'ContentColorActive' => false, 'ContentColorValue' => 0
+            ],
+            [
+                'IntervalMinValue' => 1, 'IntervalMaxValue' => 1,
+                'ConstantActive' => true, 'ConstantValue' => 'Heizt',
+                'ConversionFactor' => 1,
+                'PrefixActive' => false, 'PrefixValue' => '',
+                'SuffixActive' => false, 'SuffixValue' => '',
+                'DigitsActive' => false, 'DigitsValue' => 0,
+                'IconActive' => true, 'IconValue' => 'Flame',
+                'ColorActive' => true, 'ColorValue' => 0xFF6600,
+                'ContentColorActive' => false, 'ContentColorValue' => 0
+            ],
+            [
+                'IntervalMinValue' => 2, 'IntervalMaxValue' => 2,
+                'ConstantActive' => true, 'ConstantValue' => 'Fehler',
+                'ConversionFactor' => 1,
+                'PrefixActive' => false, 'PrefixValue' => '',
+                'SuffixActive' => false, 'SuffixValue' => '',
+                'DigitsActive' => false, 'DigitsValue' => 0,
+                'IconActive' => true, 'IconValue' => 'Alert',
+                'ColorActive' => true, 'ColorValue' => 0xFF0000,
+                'ContentColorActive' => false, 'ContentColorValue' => 0
+            ]
         ]);
         $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Information',
-            'OPTIONS'       => $heaterPresentation
+            'INTERVALS_ACTIVE' => true,
+            'INTERVALS'       => $heaterIntervals
         ], 1);
         
         // Alarms

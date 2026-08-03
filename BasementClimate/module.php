@@ -119,12 +119,8 @@ class BasementClimate extends IPSModuleStrict
         $this->RegisterVariableInteger("RadonStatus", "Radon Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Gauge',
-            'OPTIONS'      => json_encode([
-                ['Value' => 0, 'Caption' => 'Gut', 'IconValue' => 'Ok', 'ColorValue' => 0x00CC00],
-                ['Value' => 1, 'Caption' => 'Mittel', 'IconValue' => 'Warning', 'ColorValue' => 0xFFA500],
-                ['Value' => 2, 'Caption' => 'Hoch', 'IconValue' => 'Alert', 'ColorValue' => 0xFF0000],
-                ['Value' => 3, 'Caption' => 'Sehr hoch', 'IconValue' => 'Alert', 'ColorValue' => 0xCC0000]
-            ])
+            'INTERVALS_ACTIVE' => true,
+            'INTERVALS'      => json_encode(json_decode('[{"IntervalMinValue":0,"IntervalMaxValue":0,"ConstantActive":true,"ConstantValue":"Gut","IconActive":true,"IconValue":"Ok","ColorActive":true,"ColorValue":52224,"ContentColorActive":true,"ContentColorValue":16777215,"ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0},{"IntervalMinValue":1,"IntervalMaxValue":1,"ConstantActive":true,"ConstantValue":"Mittel","IconActive":true,"IconValue":"Warning","ColorActive":true,"ColorValue":16753920,"ContentColorActive":true,"ContentColorValue":16777215,"ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0},{"IntervalMinValue":2,"IntervalMaxValue":2,"ConstantActive":true,"ConstantValue":"Hoch","IconActive":true,"IconValue":"Alert","ColorActive":true,"ColorValue":16711680,"ContentColorActive":true,"ContentColorValue":16777215,"ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0},{"IntervalMinValue":3,"IntervalMaxValue":3,"ConstantActive":true,"ConstantValue":"Sehr hoch","IconActive":true,"IconValue":"Alert","ColorActive":true,"ColorValue":13369344,"ContentColorActive":true,"ContentColorValue":16777215,"ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0}]', true))
         ], 8);
         
         $this->RegisterVariableString("RadonRecommendation", "Radon Empfehlung", [
@@ -139,16 +135,13 @@ class BasementClimate extends IPSModuleStrict
             'DECIMALPLACES' => 0
         ], 9);
         
-        $co2Options = json_encode([
-            ['Value' => 0, 'Caption' => 'Gut', 'IconValue' => 'Ok', 'ColorValue' => 0x00CC00],
-            ['Value' => 1, 'Caption' => 'Mittel', 'IconValue' => 'Warning', 'ColorValue' => 0xFFA500],
-            ['Value' => 2, 'Caption' => 'Hoch', 'IconValue' => 'Alert', 'ColorValue' => 0xFF0000]
-        ]);
+        $co2Intervals = json_encode(json_decode('[{"IntervalMinValue":0,"IntervalMaxValue":0,"ConstantActive":true,"ConstantValue":"Gut","IconActive":true,"IconValue":"Ok","ColorActive":true,"ColorValue":52224,"ContentColorActive":true,"ContentColorValue":16777215,"ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0},{"IntervalMinValue":1,"IntervalMaxValue":1,"ConstantActive":true,"ConstantValue":"Mittel","IconActive":true,"IconValue":"Warning","ColorActive":true,"ColorValue":16753920,"ContentColorActive":true,"ContentColorValue":16777215,"ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0},{"IntervalMinValue":2,"IntervalMaxValue":2,"ConstantActive":true,"ConstantValue":"Hoch","IconActive":true,"IconValue":"Alert","ColorActive":true,"ColorValue":16711680,"ContentColorActive":true,"ContentColorValue":16777215,"ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0}]', true));
         
         $this->RegisterVariableInteger("CO2Status", "CO₂ Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Climate',
-            'OPTIONS'      => $co2Options
+            'INTERVALS_ACTIVE' => true,
+            'INTERVALS'      => $co2Intervals
         ], 10);
         
         $this->RegisterVariableString("CO2Recommendation", "CO₂ Empfehlung", [
@@ -166,7 +159,8 @@ class BasementClimate extends IPSModuleStrict
         $this->RegisterVariableInteger("VOCStatus", "VOC Status", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'         => 'Climate',
-            'OPTIONS'      => $co2Options
+            'INTERVALS_ACTIVE' => true,
+            'INTERVALS'      => $co2Intervals
         ], 12);
         
         $this->RegisterVariableString("VOCRecommendation", "VOC Empfehlung", [
@@ -193,12 +187,8 @@ class BasementClimate extends IPSModuleStrict
         $this->RegisterVariableInteger("DehumidifierStatus", "Status Entfeuchter", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'ICON'          => 'Drops',
-            'OPTIONS'       => json_encode([
-                ['Value' => 0, 'Caption' => 'Aus', 'IconValue' => 'Sleep', 'ColorValue' => -1],
-                ['Value' => 1, 'Caption' => 'Aktiv', 'IconValue' => 'Drops', 'ColorValue' => 0x0088FF],
-                ['Value' => 2, 'Caption' => 'Fenster offen', 'IconValue' => 'Window', 'ColorValue' => 0xFFCC00],
-                ['Value' => 3, 'Caption' => 'Tank voll!', 'IconValue' => 'Warning', 'ColorValue' => 0xFF0000]
-            ])
+            'INTERVALS_ACTIVE' => true,
+            'INTERVALS'       => json_encode(json_decode('[{"IntervalMinValue":0,"IntervalMaxValue":0,"ConstantActive":true,"ConstantValue":"Aus","IconActive":true,"IconValue":"Sleep","ColorActive":false,"ColorValue":-1,"ContentColorActive":false,"ContentColorValue":-1,"ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0},{"IntervalMinValue":1,"IntervalMaxValue":1,"ConstantActive":true,"ConstantValue":"Aktiv","IconActive":true,"IconValue":"Drops","ColorActive":true,"ColorValue":35071,"ContentColorActive":true,"ContentColorValue":16777215,"ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0},{"IntervalMinValue":2,"IntervalMaxValue":2,"ConstantActive":true,"ConstantValue":"Fenster offen","IconActive":true,"IconValue":"Window","ColorActive":true,"ColorValue":16763904,"ContentColorActive":true,"ContentColorValue":16777215,"ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0},{"IntervalMinValue":3,"IntervalMaxValue":3,"ConstantActive":true,"ConstantValue":"Tank voll!","IconActive":true,"IconValue":"Warning","ColorActive":true,"ColorValue":16711680,"ContentColorActive":true,"ContentColorValue":16777215,"ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0}]', true))
         ], 13);
         
         $this->RegisterVariableBoolean("AlarmTankFull", "Alarm: Wassertank voll", [

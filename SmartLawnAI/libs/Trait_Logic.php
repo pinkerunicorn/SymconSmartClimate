@@ -104,7 +104,10 @@ trait SmartLawnAI_Logic {
         $wasActive = $this->GetValue('WateringActive');
         $this->SetValue('WateringActive', $einVentilIstAktiv);
         if ($wasActive !== $einVentilIstAktiv && function_exists('SHC_SetIrrigationActive')) {
-            SHC_SetIrrigationActive($einVentilIstAktiv);
+            $shcInstances = IPS_GetInstanceListByModuleID('{460D7C60-0766-4534-BFD8-5920737B1845}');
+            if (!empty($shcInstances)) {
+                SHC_SetIrrigationActive($shcInstances[0], $einVentilIstAktiv);
+            }
         }
 
         // 2. Thermodynamik (VPD) für alle Zonen vorbereiten
@@ -441,7 +444,10 @@ trait SmartLawnAI_Logic {
         }
         $this->SetValue('WateringActive', $finalAktiv);
         if ($wasActive !== $finalAktiv && function_exists('SHC_SetIrrigationActive')) {
-            SHC_SetIrrigationActive($finalAktiv);
+            $shcInstances = IPS_GetInstanceListByModuleID('{460D7C60-0766-4534-BFD8-5920737B1845}');
+            if (!empty($shcInstances)) {
+                SHC_SetIrrigationActive($shcInstances[0], $finalAktiv);
+            }
         }
 
         // 5. Wasserzähler Tages-/Wochen-/Monatsreset

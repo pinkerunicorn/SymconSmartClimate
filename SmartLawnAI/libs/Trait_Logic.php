@@ -853,15 +853,37 @@ $result = GIO_Query(' . $geminiId . ',
         $zones = json_decode($zonesJson, true);
         $sprinklersJson = $this->ReadPropertyString('Sprinklers');
         $sprinklers = json_decode($sprinklersJson, true);
-        if (is_array($sprinklers)) {
+
+        // Bei silent (manueller Restart vor Plan-Berechnung) keine STOP-Befehle senden,
+        // da noch nichts läuft und jeder Befehl ein Gardena-API-Call ist (Limit: 100/Tag)
+        if (is_array($sprinklers) && !$silent) {
             foreach ($sprinklers as $s) {
                 $res = $this->ResolveSprinklerObject((int)@$s['ValveID']);
-                if ($res['ValveID'] > 0) {
+                if ($res['ValveID'] <= 0) continue;
+
+                // Nur STOP senden, wenn das Ventil tatsächlich aktiv ist
+                $isActive = false;
+                if ($res['ActivityID'] > 0) {
+                    $v = GetValue($res['ActivityID']);
+                    $act = strtoupper(is_string($v) ? $v : (string)GetValueFormatted($res['ActivityID']));
+                    $isActive = (strpos($act, 'WATERING') !== false || strpos($act, 'OPEN') !== false
+                        || strpos($act, 'BEWÄSSERUNG') !== false || strpos($act, 'GEÖFFNET') !== false
+                        || $v == 1 || $v == 2 || $v == 3);
+                } elseif ($res['RemainingSecondsID'] > 0) {
+                    $isActive = ((int)GetValue($res['RemainingSecondsID']) > 0);
+                } elseif (IPS_VariableExists($res['ValveID'])) {
+                    $v = GetValue($res['ValveID']);
+                    $isActive = ($v == 1 || $v === true);
+                }
+
+                if ($isActive) {
                     if (IPS_VariableExists($res['ValveID']) && in_array(strtolower(IPS_GetObject($res['ValveID'])['ObjectIdent']), ['action', 'valvecontrol', 'control'])) {
                         $this->SafeRequestAction($res['ValveID'], 'STOP_UNTIL_NEXT_TASK');
                     } else {
                         $this->SafeRequestAction($res['ValveID'], false);
                     }
+                } else {
+                    $this->LogAndDebug('Reset', 'Sprinkler ' . $s['ValveID'] . ' bereits inaktiv, STOP übersprungen.', 0);
                 }
             }
         }
@@ -890,8 +912,10 @@ $result = GIO_Query(' . $geminiId . ',
             }
         }
         
-        // Kurze Pause, damit Gardena die Aus-Befehle sicher verarbeitet hat
-        IPS_Sleep(1000);
+        // Kurze Pause nur wenn STOP-Befehle gesendet wurden
+        if (!$silent) {
+            IPS_Sleep(1000);
+        }
         
         if ($queueForStart) {
             $this->ProcessLogic();

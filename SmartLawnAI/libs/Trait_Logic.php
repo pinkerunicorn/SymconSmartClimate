@@ -140,6 +140,35 @@ trait SmartLawnAI_Logic {
             $this->SetValue('CurrentFlowRate', (float)GetValue($wFlowID));
         }
 
+        // 3d. Echtzeit-Wasserverbrauch (live hochzaehlen bei jedem Tick)
+        $wLiterID = $this->GetWaterMeterLiterVarID();
+        if ($wLiterID > 0 && IPS_VariableExists($wLiterID)) {
+            $currentLiters = (float)GetValue($wLiterID);
+            $lastTickRaw = $this->GetBuffer('WaterMeterLastTick');
+
+            if ($einVentilIstAktiv) {
+                if ($lastTickRaw !== '') {
+                    $delta = round($currentLiters - (float)$lastTickRaw, 1);
+                    if ($delta > 0 && $delta < 100) {
+                        $this->SetValue('WaterToday',     round($this->GetValue('WaterToday')     + $delta, 1));
+                        $this->SetValue('WaterThisWeek',  round($this->GetValue('WaterThisWeek')  + $delta, 1));
+                        $this->SetValue('WaterThisMonth', round($this->GetValue('WaterThisMonth') + $delta, 1));
+                    }
+                }
+                $this->SetBuffer('WaterMeterLastTick', (string)$currentLiters);
+            } else {
+                if ($lastTickRaw !== '') {
+                    $delta = round($currentLiters - (float)$lastTickRaw, 1);
+                    if ($delta > 0 && $delta < 100) {
+                        $this->SetValue('WaterToday',     round($this->GetValue('WaterToday')     + $delta, 1));
+                        $this->SetValue('WaterThisWeek',  round($this->GetValue('WaterThisWeek')  + $delta, 1));
+                        $this->SetValue('WaterThisMonth', round($this->GetValue('WaterThisMonth') + $delta, 1));
+                    }
+                    $this->SetBuffer('WaterMeterLastTick', '');
+                }
+            }
+        }
+
         // Manueller Start
         $isManualStart = ($this->GetBuffer('CalculatePlanPending') === 'true');
         if ($isManualStart) {
@@ -388,10 +417,6 @@ trait SmartLawnAI_Logic {
                                 if ($wStartRaw !== '' && $wStart > 0 && $wEnd >= $wStart) {
                                     $consumed = round($wEnd - $wStart, 1);
                                     if ($consumed > 0 && $consumed < 5000) {
-                                        $this->SetValue('WaterLastSession', $consumed);
-                                        $this->SetValue('WaterToday',     round($this->GetValue('WaterToday')     + $consumed, 1));
-                                        $this->SetValue('WaterThisWeek',  round($this->GetValue('WaterThisWeek')  + $consumed, 1));
-                                        $this->SetValue('WaterThisMonth', round($this->GetValue('WaterThisMonth') + $consumed, 1));
                                         $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $zone['SensorID'];
                                         $this->AddLogEvent("{$zoneName}: Verbrauch", "{$consumed} L verbraucht", '#03A9F4');
                                         $this->SLogInfo('Wasserverbrauch Zone ' . ($zone['GroupName'] ?? $zone['SensorID']), $consumed . ' L');

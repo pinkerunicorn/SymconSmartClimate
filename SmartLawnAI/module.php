@@ -121,26 +121,21 @@ class SmartLawnAI extends IPSModuleStrict {
             'SUFFIX' => ' l/min',
             'ICON' => 'Speedo'
         ], 3);
-        $this->RegisterVariableFloat("WaterLastSession", "Letzte Beregnung", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'SUFFIX' => ' L',
-            'ICON' => 'Drops'
-        ], 4);
         $this->RegisterVariableFloat("WaterToday", "Heute",            [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX' => ' L',
             'ICON' => 'Drops'
-        ], 5);
+        ], 4);
         $this->RegisterVariableFloat("WaterThisWeek", "Diese Woche",      [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX' => ' L',
             'ICON' => 'Drops'
-        ], 6);
+        ], 5);
         $this->RegisterVariableFloat("WaterThisMonth", "Dieser Monat",     [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX' => ' L',
             'ICON' => 'Drops'
-        ], 7);
+        ], 6);
         
         $this->SetVisualizationType(1);
 
@@ -305,10 +300,12 @@ class SmartLawnAI extends IPSModuleStrict {
             $this->SetValue('CurrentFlowRate', 0.0);
         }
 
+        // Alte Variable entfernen (durch Echtzeit-Zählung ersetzt)
+        $this->UnregisterVariable('WaterLastSession');
+
         // Wasserverbrauch Archiv
         $waterVars = [
             'CurrentFlowRate',
-            'WaterLastSession',
             'WaterToday',
             'WaterThisWeek',
             'WaterThisMonth',

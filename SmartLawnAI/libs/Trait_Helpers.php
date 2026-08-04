@@ -123,6 +123,7 @@ trait SmartLawnAI_Helpers {
                     IPS_SetEventCyclic($eid, 0, 0, 0, 0, 0, 0); // Täglich
                     IPS_SetEventCyclicTimeFrom($eid, $i, 0, 0);
                 }
+                IPS_SetEventScript($eid, "SLAI_ScheduledEvaluation(\$_IPS['TARGET']);");
                 IPS_SetEventActive($eid, true);
             } else {
                 if ($eid !== false) {
@@ -133,7 +134,8 @@ trait SmartLawnAI_Helpers {
     }
 
     public function AddLogEvent(string $title, string $details = '', string $color = '#2196F3'): void {
-        $logVarID = $this->GetIDForIdent('IrrigationLog');
+        $logVarID = @$this->GetIDForIdent('IrrigationLog');
+        if ($logVarID === false || !IPS_VariableExists($logVarID)) return;
         $currentLog = GetValue($logVarID);
         
         // Alten Plaintext bereinigen, wenn kein HTML-Tag vorhanden
@@ -175,8 +177,12 @@ trait SmartLawnAI_Helpers {
         }
         try {
             $result = RequestAction($variableID, $value);
+            if ($result === false) {
+                $errorMsg = 'RequestAction gab false zurueck (Ventil-ID: ' . $variableID . ')';
+                return false;
+            }
             $errorMsg = '';
-            return $result !== false;
+            return true;
         } catch (\Throwable $e) {
             $errorMsg = $e->getMessage();
             $this->LogAndDebug('SafeRequestAction', 'Fehler beim Senden an ID ' . $variableID . ': ' . $errorMsg, 0);

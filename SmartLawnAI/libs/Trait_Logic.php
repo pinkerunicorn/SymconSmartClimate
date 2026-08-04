@@ -59,9 +59,9 @@ trait SmartLawnAI_Logic {
         $airTempID = $this->ReadPropertyInteger('GlobalAirTempID');
         $humidityID = $this->ReadPropertyInteger('GlobalHumidityID');
         $illuminanceID = $this->ReadPropertyInteger('GlobalIlluminanceID');
-        $t = ($airTempID > 0) ? (float)GetValue($airTempID) : 20.0;
-        $rh = ($humidityID > 0) ? (float)GetValue($humidityID) : 50.0;
-        $lux = ($illuminanceID > 0) ? (float)GetValue($illuminanceID) : 0.0;
+        $t = ($airTempID > 0 && IPS_VariableExists($airTempID)) ? (float)GetValue($airTempID) : 20.0;
+        $rh = ($humidityID > 0 && IPS_VariableExists($humidityID)) ? (float)GetValue($humidityID) : 50.0;
+        $lux = ($illuminanceID > 0 && IPS_VariableExists($illuminanceID)) ? (float)GetValue($illuminanceID) : 0.0;
         $es = 0.6108 * exp((17.27 * $t) / ($t + 237.3));
         $vpd = $es * (1 - ($rh / 100.0));
 
@@ -72,6 +72,10 @@ trait SmartLawnAI_Logic {
     }
 
     public function ProcessLogic(): void {
+        if (!IPS_SemaphoreEnter('SmartLawnAI_' . $this->InstanceID, 500)) {
+            return; // Bereits in Bearbeitung
+        }
+        try {
         $defaultZiel  = GetValue($this->GetIDForIdent('DefaultZielFeuchte'));
         $defaultStart = GetValue($this->GetIDForIdent('DefaultStartSchwellwert'));
         
@@ -119,9 +123,9 @@ trait SmartLawnAI_Logic {
         $humidityID = $this->ReadPropertyInteger('GlobalHumidityID');
         $illuminanceID = $this->ReadPropertyInteger('GlobalIlluminanceID');
 
-        $t = ($airTempID > 0) ? (float)GetValue($airTempID) : 20.0;
-        $rh = ($humidityID > 0) ? (float)GetValue($humidityID) : 50.0;
-        $lux = ($illuminanceID > 0) ? (float)GetValue($illuminanceID) : 0.0;
+        $t = ($airTempID > 0 && IPS_VariableExists($airTempID)) ? (float)GetValue($airTempID) : 20.0;
+        $rh = ($humidityID > 0 && IPS_VariableExists($humidityID)) ? (float)GetValue($humidityID) : 50.0;
+        $lux = ($illuminanceID > 0 && IPS_VariableExists($illuminanceID)) ? (float)GetValue($illuminanceID) : 0.0;
 
         $es = 0.6108 * exp((17.27 * $t) / ($t + 237.3));
         $vpd = $es * (1 - ($rh / 100.0));
@@ -183,7 +187,7 @@ trait SmartLawnAI_Logic {
             $einVentilIstAktiv = false;
             foreach ($zones as $zone) {
                 $status = $this->GetZoneStatus($zone['SensorID']);
-                if (in_array($status, $aktiveStatus)) {
+                if (in_array($status, $displayAktivStatus)) {
                     $einVentilIstAktiv = true;
                 }
             }
@@ -225,7 +229,6 @@ trait SmartLawnAI_Logic {
                     $hwStr = strtoupper((string)$hwStatus);
                     if (in_array($hwStr, ['ERROR', 'WARNING', 'OFFLINE', 'DEFECT', 'FAULT'])) {
                         $sName = isset($s['SprinklerName']) && !empty($s['SprinklerName']) ? $s['SprinklerName'] : 'Sprinkler '. $s['ValveID'];
-                        $this->LogAndDebug('Hardware-Check', 'Zone '. $zone['SensorID'] . ''. $sName . 'meldet Fehler: '. $hwStr, 0);
                         $this->LogAndDebug('Hardware-Check', 'Zone ' . $zone['SensorID'] . ' ' . $sName . ' meldet Fehler: ' . $hwStr, 0);
                         $hardwareFehler = true;
                         $fehlerhafterSprinklerName = $sName;
@@ -367,8 +370,6 @@ trait SmartLawnAI_Logic {
                         if ($ventilOffen) {
                             $this->LogAndDebug('Sequencer', 'Rückmeldung erhalten: Ventil ist OFFEN. Bewässerung läuft.', 0);
                             $this->SetValue('DeviceAvailable', 1);
-                            $this->SetValue('DeviceAvailable', 1); // Ventil offen bestaetigt
-                            $this->LogAndDebug('Sequencer', 'Rueckmeldung erhalten: Ventil ist OFFEN. Bewaesserung laeuft.', 0);
                             $this->SetZoneStatus($zone['SensorID'], 'WATERING');
                             $wLiterID = $this->GetWaterMeterLiterVarID();
                             if ($wLiterID > 0 && $this->GetBuffer('WaterMeterStart_' . $zone['SensorID']) === '') {
@@ -379,8 +380,11 @@ trait SmartLawnAI_Logic {
                             $wateringStart = $this->GetZoneWateringStart($zone['SensorID']);
                             if ((time() - $wateringStart) > 180) { // 3 Minuten Timeout!
                                 $this->SLogError('TIMEOUT beim Ventil-Start', 'Sprinkler: ' . $currentSprinklerName . ' meldet nicht OPEN nach 3 Minuten');
-                                $this->AddLogEvent("Timeout", "{$currentSprinklerName} meldet nicht OPEN.", '#F44336');
-                                $aktuellerStatus = 'WATERING'; // force next logic block to finish it
+                                $this->SetZoneStatus($zone['SensorID'], 'HARDWARE_FEHLER');
+                                $this->SetValue('DeviceAvailable', 0);
+                                $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $zone['SensorID'];
+                                $this->AddLogEvent("{$zoneName}: Timeout", "{$currentSprinklerName} meldet nach 3 Min nicht OPEN. Hardware-Fehler.", '#F44336');
+                                break;
                             } else {
                                 $this->LogAndDebug('Sequencer', 'Warte auf Cloud-Rückmeldung (bisher '. (time()-$wateringStart) . 's)', 0);
                                 $einVentilIstAktiv = true; // Blockiere andere Zonen
@@ -407,6 +411,23 @@ trait SmartLawnAI_Logic {
                         $remainingText = '';
                     }
 
+                    // Failsafe: Absolutes Maximum-Timeout (verhindert endloses WATERING bei Cloud-Freeze)
+                    $maxDur = $this->GetZoneDauer($zone['SensorID']);
+                    $waterStart = $this->GetZoneWateringStart($zone['SensorID']);
+                    $absoluteMax = max(($maxDur * 60) + 600, 3600); // Geplante Dauer + 10min Puffer, mind. 1h
+                    if ($waterStart > 0 && (time() - $waterStart) > $absoluteMax) {
+                        $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $zone['SensorID'];
+                        $this->SLogError('FAILSAFE TIMEOUT', $zoneName . ': Bewaesserung laeuft seit ' . round((time() - $waterStart) / 60) . ' Min. Erzwinge Abbruch.');
+                        $this->AddLogEvent("{$zoneName}: Failsafe Timeout", "Bewaesserung nach " . round((time() - $waterStart) / 60) . " Min erzwungen beendet", '#F44336');
+                        $this->SetZoneStatus($zone['SensorID'], 'IDLE');
+                        $this->SetValue('DeviceAvailable', 0);
+                        // Ventil stoppen falls moeglich
+                        if ($res['ValveID'] > 0) {
+                            $this->SafeRequestAction($res['ValveID'], 'STOP_UNTIL_NEXT_TASK');
+                        }
+                        $einVentilIstAktiv = false;
+                        break;
+                    }
                     if (!$ventilOffen && $aktuellerStatus === 'WATERING') {
                         $this->SLogInfo('Bewässerung beendet', 'Sprinkler: ' . $currentSprinklerName . ' in Zone ' . $zone['SensorID'] . ' | Status: ' . $hwVal);
                         
@@ -426,7 +447,7 @@ trait SmartLawnAI_Logic {
                             if ($wLiterID > 0) {
                                 $wStartRaw = $this->GetBuffer('WaterMeterStart_' . $zone['SensorID']);
                                 $wStart = (float)$wStartRaw;
-                                $wEnd   = (float)GetValue($wLiterID);
+                                $wEnd   = ($wLiterID > 0 && IPS_VariableExists($wLiterID)) ? (float)GetValue($wLiterID) : 0.0;
                                 
                                 if ($wStartRaw !== '' && $wStart > 0 && $wEnd >= $wStart) {
                                     $consumed = round($wEnd - $wStart, 1);
@@ -436,9 +457,12 @@ trait SmartLawnAI_Logic {
                                         $this->SLogInfo('Wasserverbrauch Zone ' . ($zone['GroupName'] ?? $zone['SensorID']), $consumed . ' L');
                                     } else {
                                         $this->SLogWarning('Wasserverbrauch unplausibel, ignoriert: ' . $consumed . ' L (Start: ' . $wStart . ' L, Ende: ' . $wEnd . ' L)');
+                                        $this->AddLogEvent("{$zoneName}: Warnung", 'Wasserverbrauch unplausibel: ' . $consumed . ' L', '#FF9800');
                                     }
                                 } else {
                                     $this->SLogWarning('Wasserzähler-Startwert ungültig oder nicht vorhanden (Start: ' . $wStartRaw . ' L, Ende: ' . $wEnd . ' L)');
+                                    $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $zone['SensorID'];
+                                    $this->AddLogEvent("{$zoneName}: Warnung", 'Wasserzaehler-Startwert ungueltig', '#FF9800');
                                 }
                                 $this->SetBuffer('WaterMeterStart_' . $zone['SensorID'], '');
                             }
@@ -471,6 +495,16 @@ trait SmartLawnAI_Logic {
                         }
 
                         $this->SetZoneStatus($zone['SensorID'], 'IDLE');
+                    }
+                    break;
+                case 'HARDWARE_FEHLER':
+                    // Recovery: Hardware erneut pruefen
+                    if ($this->isZoneHardwareOk($zone, $sprinklers)) {
+                        $this->SetZoneStatus($zone['SensorID'], 'IDLE');
+                        $this->SetValue('DeviceAvailable', 1);
+                        $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $zone['SensorID'];
+                        $this->AddLogEvent("{$zoneName}: Hardware OK", "Sprinkler wieder erreichbar", '#4CAF50');
+                        $this->SLogInfo('Hardware Recovery', $zoneName . ' ist wieder OK');
                     }
                     break;
             }
@@ -608,6 +642,9 @@ trait SmartLawnAI_Logic {
             } else {
                 $this->SetTimerInterval('LawnAITimer', 60000);
             }
+        }
+        } finally {
+            IPS_SemaphoreLeave('SmartLawnAI_' . $this->InstanceID);
         }
     }
 

@@ -189,7 +189,7 @@ class SmartLawnAI extends IPSModuleStrict {
         
         // NEU: Gemini Retry Timer
         $this->RegisterTimer('GeminiRetryTimer', 0, 'SLAI_ProcessGeminiRetry($_IPS[\'TARGET\']);');
-        $this->RegisterTimer('ResetForceStart', 0, 'IPS_RequestAction($_IPS[\'TARGET\'], \'ResetForceStart\', true);');
+        $this->RegisterTimer('ResetForceStart', 0, 'SLAI_ResetForceStart($_IPS[\'TARGET\']);');
         
     }
 
@@ -239,6 +239,12 @@ class SmartLawnAI extends IPSModuleStrict {
 
     public function ApplyChanges(): void {
         parent::ApplyChanges();
+        // Alte Message-Registrierungen entfernen
+        foreach ($this->GetMessageList() as $senderID => $messages) {
+            foreach ($messages as $message) {
+                $this->UnregisterMessage($senderID, $message);
+            }
+        }
         $sensorID = $this->ReadPropertyInteger('GlobalAirTempID');
         if ($sensorID <= 0) {
             $this->SetStatus(104);
@@ -409,22 +415,34 @@ class SmartLawnAI extends IPSModuleStrict {
         }
     }
 
+    public function ResetForceStart(): void {
+        $this->SetValue('ForceStart', false);
+    }
+
     public function RunTestCommand(int $valveID, string $command): void {
         $res = $this->ResolveSprinklerObject($valveID);
         if ($command === 'START') {
             if ($res['DurationID'] > 0) {
-                $this->SafeRequestAction($res['DurationID'], 5); // 5 Minuten
+                $testErr = '';
+                $ok = $this->SafeRequestAction($res['DurationID'], 5, $testErr); // 5 Minuten
+                if (!$ok) { echo 'Fehler: ' . $testErr; return; }
             }
             if ($res['ValveID'] > 0) {
-                $this->SafeRequestAction($res['ValveID'], 'START_SECONDS_TO_OVERRIDE');
+                $testErr = '';
+                $ok = $this->SafeRequestAction($res['ValveID'], 'START_SECONDS_TO_OVERRIDE', $testErr);
+                if (!$ok) { echo 'Fehler: ' . $testErr; return; }
             }
             $this->SLogDebug('RunTestCommand', "START Befehl (5 Min) gesendet an ". $valveID . "(DurationID: ". $res['DurationID'] . ", ActionID: ". $res['ValveID'] . ")");
         } elseif ($command === 'STOP') {
             if ($res['ValveID'] > 0) {
                 if (IPS_VariableExists($res['ValveID']) && in_array(strtolower(IPS_GetObject($res['ValveID'])['ObjectIdent']), ['action', 'valvecontrol', 'control'])) {
-                    $this->SafeRequestAction($res['ValveID'], 'STOP_UNTIL_NEXT_TASK');
+                    $testErr = '';
+                    $ok = $this->SafeRequestAction($res['ValveID'], 'STOP_UNTIL_NEXT_TASK', $testErr);
+                    if (!$ok) { echo 'Fehler: ' . $testErr; return; }
                 } else {
-                    $this->SafeRequestAction($res['ValveID'], false);
+                    $testErr = '';
+                    $ok = $this->SafeRequestAction($res['ValveID'], false, $testErr);
+                    if (!$ok) { echo 'Fehler: ' . $testErr; return; }
                 }
             }
             $this->SLogDebug('RunTestCommand', "STOP Befehl gesendet an ". $valveID);

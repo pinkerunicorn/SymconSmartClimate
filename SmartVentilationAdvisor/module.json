@@ -1,0 +1,12 @@
+{
+    "id": "{3F3186B4-140A-4DED-8E45-877AD0C83FFB}",
+    "name": "SmartVentilationAdvisor",
+    "type": 3,
+    "vendor": "Florian Graßinger",
+    "aliases": ["Ventilation", "AirQuality", "Climate Advisor"],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "SVA",
+    "url": "https://github.com/pinkerunicorn/SymconSmartClimate"
+}

@@ -341,7 +341,7 @@ class SmartLawnAI extends IPSModuleStrict {
 
         // DeviceAvailable: beim Start auf OK setzen (wird bei Fehlern auf 0 gesetzt)
         if (GetValue($this->GetIDForIdent('DeviceAvailable')) === 0) {
-            // Nur zuruecksetzen wenn vorher kein Init-Wert vorhanden war
+            $this->SetValue('DeviceAvailable', 1);
         }
         // Archivierung des Geraetestatus
         $this->EnableArchive($this->GetIDForIdent('DeviceAvailable'));

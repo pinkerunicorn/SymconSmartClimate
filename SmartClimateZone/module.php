@@ -180,17 +180,48 @@ class SmartClimateZone extends IPSModuleStrict
         $this->RegisterVariableFloat("AbsHumOutside", "Absolute Feuchte Außen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' g/m³','DECIMALPLACES' => 2], 4);
         $this->RegisterVariableFloat("CurrentHumidity", "Aktuelle Luftfeuchtigkeit", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' %','DECIMALPLACES' => 1], 5);
         
-        if (!IPS_VariableProfileExists('SCZ.MoldRiskIndex')) {
-            IPS_CreateVariableProfile('SCZ.MoldRiskIndex', 1);
-        }
-        IPS_SetVariableProfileText('SCZ.MoldRiskIndex', '', '');
-        IPS_SetVariableProfileValues('SCZ.MoldRiskIndex', 0, 100, 1);
-        IPS_SetVariableProfileAssociation('SCZ.MoldRiskIndex', 0, '%d %%', 'Ok', 0x00CC00);
-        IPS_SetVariableProfileAssociation('SCZ.MoldRiskIndex', 50, '%d %%', 'Warning', 0xFFAA00);
-        IPS_SetVariableProfileAssociation('SCZ.MoldRiskIndex', 75, '%d %%', 'Alert', 0xFF0000);
-
-        $this->RegisterVariableInteger("MoldRiskIndex", "Schimmelrisiko", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information'], 6);
-        IPS_SetVariableCustomProfile($this->GetIDForIdent('MoldRiskIndex'), 'SCZ.MoldRiskIndex');
+        $moldIntervals = [
+            [
+                'IntervalMinValue' => 0, 'IntervalMaxValue' => 49,
+                'ConstantActive' => false, 'ConstantValue' => '',
+                'ConversionFactor' => 1,
+                'PrefixActive' => false, 'PrefixValue' => '',
+                'SuffixActive' => true, 'SuffixValue' => ' %',
+                'DigitsActive' => false, 'DigitsValue' => 0,
+                'IconActive' => true, 'IconValue' => 'Ok',
+                'ColorActive' => true, 'ColorValue' => 0x00CC00,
+                'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF
+            ],
+            [
+                'IntervalMinValue' => 50, 'IntervalMaxValue' => 74,
+                'ConstantActive' => false, 'ConstantValue' => '',
+                'ConversionFactor' => 1,
+                'PrefixActive' => false, 'PrefixValue' => '',
+                'SuffixActive' => true, 'SuffixValue' => ' %',
+                'DigitsActive' => false, 'DigitsValue' => 0,
+                'IconActive' => true, 'IconValue' => 'Warning',
+                'ColorActive' => true, 'ColorValue' => 0xFFAA00,
+                'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF
+            ],
+            [
+                'IntervalMinValue' => 75, 'IntervalMaxValue' => 100,
+                'ConstantActive' => false, 'ConstantValue' => '',
+                'ConversionFactor' => 1,
+                'PrefixActive' => false, 'PrefixValue' => '',
+                'SuffixActive' => true, 'SuffixValue' => ' %',
+                'DigitsActive' => false, 'DigitsValue' => 0,
+                'IconActive' => true, 'IconValue' => 'Alert',
+                'ColorActive' => true, 'ColorValue' => 0xFF0000,
+                'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF
+            ]
+        ];
+        
+        $this->RegisterVariableInteger("MoldRiskIndex", "Schimmelrisiko", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON' => 'Information',
+            'INTERVALS_ACTIVE' => true,
+            'INTERVALS' => json_encode($moldIntervals)
+        ], 6);
 
         $this->RegisterVariableBoolean("AlarmWindowClose", "Alarm: Fenster schließen", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH], 203);
         $this->EnableAction("AlarmWindowClose");

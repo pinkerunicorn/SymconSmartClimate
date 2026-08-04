@@ -480,6 +480,9 @@ class SmartClimateZone extends IPSModuleStrict
         if ($this->ReadPropertyBoolean("EnableFrostProtection") && $tempIn !== null) {
             $this->ControlFrostProtection($tempIn, $windowOpen);
         }
+        if ($this->ReadPropertyBoolean("EnableAirQuality")) {
+            $this->UpdateAirQuality();
+        }
     }
     
     private function ControlHeating(float $humIn): void {
@@ -631,5 +634,61 @@ class SmartClimateZone extends IPSModuleStrict
         } else {
             $this->StopTimer("PowerCheckTimer");
         }
+    }
+    
+    private function UpdateAirQuality(): void {
+        $radonLong = $this->GetValue("RadonLongTerm");
+        $radonWarn = $this->ReadPropertyFloat("RadonWarningLevel");
+        $radonAlarm = $this->ReadPropertyFloat("RadonAlarmLevel");
+        
+        $rStatus = 0;
+        $rRec = "Alles im grünen Bereich.";
+        if ($radonLong >= $radonAlarm) { 
+            $rStatus = 3; 
+            $rRec = "Dringend lüften! Alarm-Grenzwert überschritten."; 
+        } elseif ($radonLong >= $radonWarn + ($radonAlarm - $radonWarn) / 2) { 
+            $rStatus = 2; 
+            $rRec = "Lüften dringend empfohlen."; 
+        } elseif ($radonLong >= $radonWarn) { 
+            $rStatus = 1; 
+            $rRec = "Lüften empfohlen zur Radon-Reduktion."; 
+        }
+        
+        $this->SetValueIfChanged("RadonStatus", $rStatus);
+        $this->SetValueIfChanged("RadonRecommendation", $rRec);
+        
+        $co2 = $this->GetValue("CO2Value");
+        $co2Warn = $this->ReadPropertyFloat("CO2WarningLevel");
+        $co2Alarm = $this->ReadPropertyFloat("CO2AlarmLevel");
+        
+        $cStatus = 0; 
+        $cRec = "Gute Luftqualität.";
+        if ($co2 >= $co2Alarm) { 
+            $cStatus = 2; 
+            $cRec = "Dringend lüften! Sehr schlechte Luft."; 
+        } elseif ($co2 >= $co2Warn) { 
+            $cStatus = 1; 
+            $cRec = "Lüften empfohlen (CO2-Wert erhöht)."; 
+        }
+        
+        $this->SetValueIfChanged("CO2Status", $cStatus);
+        $this->SetValueIfChanged("CO2Recommendation", $cRec);
+        
+        $voc = $this->GetValue("VOCValue");
+        $vocWarn = $this->ReadPropertyFloat("VOCWarningLevel");
+        $vocAlarm = $this->ReadPropertyFloat("VOCAlarmLevel");
+        
+        $vStatus = 0; 
+        $vRec = "Gute Luftqualität.";
+        if ($voc >= $vocAlarm) { 
+            $vStatus = 2; 
+            $vRec = "Dringend lüften! VOC-Belastung hoch."; 
+        } elseif ($voc >= $vocWarn) { 
+            $vStatus = 1; 
+            $vRec = "Lüften empfohlen (VOC-Wert erhöht)."; 
+        }
+        
+        $this->SetValueIfChanged("VOCStatus", $vStatus);
+        $this->SetValueIfChanged("VOCRecommendation", $vRec);
     }
 }

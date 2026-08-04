@@ -18,6 +18,10 @@ class SmartClimateZone extends IPSModuleStrict
         $this->RegisterPropertyBoolean("EnableFrostProtection", false);
         $this->RegisterPropertyBoolean("EnableDehumidifier", false);
         $this->RegisterPropertyBoolean("EnableAirQuality", false);
+        $this->RegisterPropertyBoolean("EnableFreeCooling", false);
+        
+        $this->RegisterPropertyFloat("TargetCoolingTemp", 23.0);
+        $this->RegisterPropertyFloat("MoldWarningThreshold", 60.0);
 
         // Core Properties (Temperature / Humidity Inside & Outside)
         $this->RegisterPropertyInteger("SensorTempInside", 0);
@@ -176,6 +180,17 @@ class SmartClimateZone extends IPSModuleStrict
         $this->RegisterVariableFloat("AbsHumOutside", "Absolute Feuchte Außen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' g/m³','DECIMALPLACES' => 2], 4);
         $this->RegisterVariableFloat("CurrentHumidity", "Aktuelle Luftfeuchtigkeit", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' %','DECIMALPLACES' => 1], 5);
         
+        if (!IPS_VariableProfileExists('SCZ.MoldRisk')) {
+            IPS_CreateVariableProfile('SCZ.MoldRisk', 1);
+            IPS_SetVariableProfileText('SCZ.MoldRisk', '', ' %');
+            IPS_SetVariableProfileValues('SCZ.MoldRisk', 0, 100, 1);
+            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 0, '%d %%', 'Ok', 0x00CC00);
+            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 50, '%d %%', 'Warning', 0xFFAA00);
+            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 75, '%d %%', 'Alert', 0xFF0000);
+        }
+        $this->RegisterVariableInteger("MoldRiskIndex", "Schimmelrisiko", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information'], 6);
+        IPS_SetVariableCustomProfile($this->GetIDForIdent('MoldRiskIndex'), 'SCZ.MoldRisk');
+
         $this->RegisterVariableBoolean("AlarmWindowClose", "Alarm: Fenster schließen", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH], 203);
         $this->EnableAction("AlarmWindowClose");
     }
@@ -329,34 +344,70 @@ class SmartClimateZone extends IPSModuleStrict
             $this->SetValue("DewPointInside", $dpIn);
             $this->SetValue("CurrentHumidity", $humIn);
             
+            // Mold Risk Calculation
+            $moldThreshold = $this->ReadPropertyFloat("MoldWarningThreshold");
+            $risk = ($humIn - ($moldThreshold - 10)) * 5;
+            $risk = max(0, min(100, $risk));
+            $this->SetValue("MoldRiskIndex", (int)$risk);
+
             // Ventilation logic
             $threshold   = $this->ReadPropertyFloat("VentilationThreshold");
             $closeMargin = $this->ReadPropertyFloat("VentilationCloseMargin");
+            $enableCooling = $this->ReadPropertyBoolean("EnableFreeCooling");
+            $targetCooling = $this->ReadPropertyFloat("TargetCoolingTemp");
+            
             $recommendation = false;
             $closeAlarm     = false;
             $details        = "Keine Aktion erforderlich.";
             
+            $dryerOutside = ($absOut <= ($absIn - $threshold));
+            $colderOutside = ($tempOut < $tempIn);
+            
             if (!$windowOpen) {
-                if ($absOut <= ($absIn - $threshold)) {
+                // Kann man Kühlen UND ist es draußen nicht feuchter? (Feuchtigkeit hat Vorrang!)
+                $canCool = ($enableCooling && ($tempIn > $targetCooling) && $colderOutside && ($absOut <= $absIn));
+                
+                if ($dryerOutside && $canCool) {
+                    $recommendation = true;
+                    $details = sprintf("Lüften empfohlen! Kühlen & Trocknen möglich (Außen: %.1f°C, %.2f g/m³)", $tempOut, $absOut);
+                } elseif ($dryerOutside) {
                     $recommendation = true;
                     $details = sprintf("Lüften empfohlen! Außen ist trockener (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
+                } elseif ($canCool) {
+                    $recommendation = true;
+                    $details = sprintf("Lüften empfohlen zum Kühlen (Außen: %.1f°C, Innen: %.1f°C).", $tempOut, $tempIn);
                 } else {
-                    $details = sprintf("Lüften lohnt nicht (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
+                    if ($enableCooling && $colderOutside && ($absOut > $absIn)) {
+                        $details = sprintf("Nicht kühlen: Draußen ist es feuchter (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
+                    } else {
+                        $details = sprintf("Lüften lohnt nicht (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
+                    }
                 }
                 $this->SetValueIfChanged("AlarmWindowClose", false);
             } else {
+                $alarmReason = "";
+                // Alarm: Feuchtigkeit
                 if ($absOut >= ($absIn - $closeMargin)) {
                     $closeAlarm = true;
                     if ($absOut >= $absIn) {
-                        $details = sprintf("Fenster SCHLIESSEN! Außen wird es feuchter (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
+                        $alarmReason = sprintf("Fenster SCHLIESSEN! Außen wird es feuchter (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
                     } else {
-                        $details = sprintf("Achtung: Fenster bald schließen! Außenfeuchte nähert sich der Innenfeuchte.", $absOut, $absIn);
+                        $alarmReason = sprintf("Achtung: Fenster bald schließen! Außenfeuchte nähert sich der Innenfeuchte.");
                     }
-                } else {
-                    $details = sprintf("Lüften trocknet weiterhin (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
                 }
+                
+                // Alarm: Hitze (falls man lüftet, aber es draußen wärmer wird als drinnen)
+                if ($enableCooling && ($tempOut >= $tempIn)) {
+                    $closeAlarm = true;
+                    $alarmReason = sprintf("Fenster SCHLIESSEN! Außen wird es wärmer (Außen: %.1f°C, Innen: %.1f°C)", $tempOut, $tempIn);
+                }
+
                 if ($closeAlarm) {
+                    $details = $alarmReason;
                     $this->SetValueIfChanged("AlarmWindowClose", true);
+                } else {
+                    $details = sprintf("Lüften wirkt weiterhin positiv (Trocknen/Kühlen).");
+                    $this->SetValueIfChanged("AlarmWindowClose", false);
                 }
             }
             

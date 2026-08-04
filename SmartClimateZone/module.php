@@ -184,9 +184,9 @@ class SmartClimateZone extends IPSModuleStrict
             IPS_CreateVariableProfile('SCZ.MoldRisk', 1);
             IPS_SetVariableProfileText('SCZ.MoldRisk', '', ' %');
             IPS_SetVariableProfileValues('SCZ.MoldRisk', 0, 100, 1);
-            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 0, '%d %%', 'Ok', 0x00CC00);
-            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 50, '%d %%', 'Warning', 0xFFAA00);
-            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 75, '%d %%', 'Alert', 0xFF0000);
+            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 0, '%d', 'Ok', 0x00CC00);
+            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 50, '%d', 'Warning', 0xFFAA00);
+            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 75, '%d', 'Alert', 0xFF0000);
         }
         $this->RegisterVariableInteger("MoldRiskIndex", "Schimmelrisiko", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information'], 6);
         IPS_SetVariableCustomProfile($this->GetIDForIdent('MoldRiskIndex'), 'SCZ.MoldRisk');
@@ -483,9 +483,7 @@ class SmartClimateZone extends IPSModuleStrict
         $warningTemp = $this->ReadPropertyFloat("FrostWarningTemp");
         
         $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
-        if ($plugId == 0 || !IPS_VariableExists($plugId)) return;
-        
-        $isHeating = GetValue($plugId);
+        $isHeating = ($plugId > 0 && IPS_VariableExists($plugId)) ? GetValue($plugId) : false;
         $newHeatingState = $isHeating;
         
         if ($tempIn <= ($targetTemp - $hysteresis)) {
@@ -553,13 +551,12 @@ class SmartClimateZone extends IPSModuleStrict
 
     private function ControlDehumidifier(float $humIn, bool $windowOpen): void {
         $plugId = $this->ReadPropertyInteger("ActuatorDehumidifierPlug");
-        if ($plugId == 0 || !IPS_VariableExists($plugId)) return;
         
         $maxHum   = $this->GetValue("DehumidifierMaxHum");
         $minHum   = $this->GetValue("DehumidifierMinHum");
         $tankFull = $this->GetValue("AlarmTankFull");
         
-        $plugStatus = GetValue($plugId);
+        $plugStatus = ($plugId > 0 && IPS_VariableExists($plugId)) ? GetValue($plugId) : false;
         $newStatus  = $plugStatus;
         $statusText = 0; 
         
@@ -572,7 +569,7 @@ class SmartClimateZone extends IPSModuleStrict
             $statusText = $tankFull ? 3 : ($newStatus ? 1 : 0);
         }
         
-        if ($plugStatus != $newStatus) {
+        if ($plugId > 0 && IPS_VariableExists($plugId) && $plugStatus != $newStatus) {
             @RequestAction($plugId, $newStatus);
         }
         

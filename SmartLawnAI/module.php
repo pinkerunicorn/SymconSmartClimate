@@ -118,7 +118,7 @@ class SmartLawnAI extends IPSModuleStrict {
         // Geraete-Status Variable (Position 901 = Diagnostik)
         $daIntervals = json_encode([
             [
-                'IntervalMinValue' => 0, 'IntervalMaxValue' => 1,
+                'IntervalMinValue' => 0, 'IntervalMaxValue' => 0,
                 'ConstantActive' => true, 'ConstantValue' => 'Fehler',
                 'ConversionFactor' => 1,
                 'PrefixActive' => false, 'PrefixValue' => '',
@@ -204,13 +204,21 @@ class SmartLawnAI extends IPSModuleStrict {
                 $this->AddLogEvent('Sperrzeit deaktiviert', 'Bewässerung wieder freigegeben.', '#4CAF50');
             }
         } else if ($Ident === 'AutomaticActive') {
+            if ($Value) {
+                if (!$this->CheckAllHardwareStatus()) {
+                    $this->SLogError('Automatik', 'Hardware-Fehler erkannt, Automatik wird nicht aktiviert.');
+                    $this->AddLogEvent('Hardware Fehler', 'Automatik Start verweigert. Bitte Sprinkler pruefen.', '#F44336');
+                    $this->SetValue('DeviceAvailable', 0);
+                    echo 'Hardware-Fehler! Bitte Log pruefen.';
+                    return;
+                }
+                $this->SetValue('DeviceAvailable', 1);
+            }
             $this->SetValue($Ident, $Value);
             $this->MaintainScheduleEvents($Value);
             
             if (!$Value) {
                 $this->SetTimerInterval('LawnAITimer', 0);
-                $this->resetAllZones(false);
-            } else {
                 $this->SetTimerInterval('LawnAITimer', 5000);
                 $this->SetBuffer('LastPlanCalculation', '0');
                 $this->AddLogEvent("System: Bereit", "Automatik aktiviert. Zeitpläne aktiv.", '#4CAF50');

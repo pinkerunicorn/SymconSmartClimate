@@ -974,6 +974,24 @@ $result = GIO_Query(' . $geminiId . ',
         $this->SetTimerInterval('LawnAITimer', 1000); // ProcessLogic wird im nächsten Tick aufgerufen
     }
 
+    public function CheckAllHardwareStatus(): bool {
+        $zonesJson = $this->ReadPropertyString('Zones');
+        if (empty($zonesJson)) return true;
+        $zones = json_decode($zonesJson, true);
+        if (!is_array($zones)) return true;
+        
+        $sprinklersJson = $this->ReadPropertyString('Sprinklers');
+        $sprinklers = empty($sprinklersJson) ? [] : json_decode($sprinklersJson, true);
+        if (!is_array($sprinklers)) $sprinklers = [];
+
+        foreach ($zones as $zone) {
+            if (!$this->isZoneHardwareOk($zone, $sprinklers)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private function isZoneHardwareOk(array $zone, array $sprinklers): bool {
         $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $zone['SensorID'];
         foreach ($sprinklers as $s) {

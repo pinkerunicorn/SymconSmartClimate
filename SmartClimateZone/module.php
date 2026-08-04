@@ -217,6 +217,13 @@ class SmartClimateZone extends IPSModuleStrict
             $this->EnableAction("AlarmFrost");
             
             IPS_SetVariableCustomProfile($this->GetIDForIdent('HeaterStatus'), '');
+        } else {
+            @$this->UnregisterVariable("WinterMode");
+            @$this->UnregisterVariable("TargetFrostTemperature");
+            @$this->UnregisterVariable("HeaterStatus");
+            @$this->UnregisterVariable("AlarmHeaterDefect");
+            @$this->UnregisterVariable("AlarmFrost");
+            $this->StopTimer("HeaterDefectTimer");
         }
     }
 
@@ -239,6 +246,12 @@ class SmartClimateZone extends IPSModuleStrict
             $this->EnableAction("AlarmTankFull");
             
             IPS_SetVariableCustomProfile($this->GetIDForIdent('DehumidifierStatus'), '');
+        } else {
+            @$this->UnregisterVariable("DehumidifierMaxHum");
+            @$this->UnregisterVariable("DehumidifierMinHum");
+            @$this->UnregisterVariable("DehumidifierStatus");
+            @$this->UnregisterVariable("AlarmTankFull");
+            $this->StopTimer("PowerCheckTimer");
         }
     }
 
@@ -272,6 +285,17 @@ class SmartClimateZone extends IPSModuleStrict
             IPS_SetVariableCustomProfile($this->GetIDForIdent('RadonStatus'), '');
             IPS_SetVariableCustomProfile($this->GetIDForIdent('CO2Status'), '');
             IPS_SetVariableCustomProfile($this->GetIDForIdent('VOCStatus'), '');
+        } else {
+            @$this->UnregisterVariable("RadonShortTerm");
+            @$this->UnregisterVariable("RadonLongTerm");
+            @$this->UnregisterVariable("RadonStatus");
+            @$this->UnregisterVariable("RadonRecommendation");
+            @$this->UnregisterVariable("CO2Value");
+            @$this->UnregisterVariable("CO2Status");
+            @$this->UnregisterVariable("CO2Recommendation");
+            @$this->UnregisterVariable("VOCValue");
+            @$this->UnregisterVariable("VOCStatus");
+            @$this->UnregisterVariable("VOCRecommendation");
         }
     }
 

@@ -182,12 +182,13 @@ class SmartClimateZone extends IPSModuleStrict
         
         if (!IPS_VariableProfileExists('SCZ.MoldRisk')) {
             IPS_CreateVariableProfile('SCZ.MoldRisk', 1);
-            IPS_SetVariableProfileText('SCZ.MoldRisk', '', ' %');
-            IPS_SetVariableProfileValues('SCZ.MoldRisk', 0, 100, 1);
-            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 0, '%d', 'Ok', 0x00CC00);
-            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 50, '%d', 'Warning', 0xFFAA00);
-            IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 75, '%d', 'Alert', 0xFF0000);
         }
+        IPS_SetVariableProfileText('SCZ.MoldRisk', '', ' %');
+        IPS_SetVariableProfileValues('SCZ.MoldRisk', 0, 100, 1);
+        IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 0, '%d', 'Ok', 0x00CC00);
+        IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 50, '%d', 'Warning', 0xFFAA00);
+        IPS_SetVariableProfileAssociation('SCZ.MoldRisk', 75, '%d', 'Alert', 0xFF0000);
+
         $this->RegisterVariableInteger("MoldRiskIndex", "Schimmelrisiko", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information'], 6);
         IPS_SetVariableCustomProfile($this->GetIDForIdent('MoldRiskIndex'), 'SCZ.MoldRisk');
 

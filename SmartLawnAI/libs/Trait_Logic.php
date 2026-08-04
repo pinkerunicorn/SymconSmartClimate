@@ -606,13 +606,53 @@ trait SmartLawnAI_Logic {
                 
                 $isWaiting = ($this->GetZoneStatus($waterZone['SensorID']) === 'WAITING_FOR_OPEN');
                 if ($isWaiting) {
-                    $baseStatus = 'Wartet auf Ventil: '. $zoneName . '('. $cName . ')';
+                    $baseStatus = 'Wartet auf Ventil: '. $zoneName . ' ('. $cName . ')';
                 } else {
-                    $baseStatus = 'Bewässert: '. $zoneName . '('. $cName . ')'. $remainingText;
+                    // Fortschrittsbalken berechnen
+                    $dMin = $this->GetZoneDauer($waterZone['SensorID']);
+                    $wStart = $this->GetZoneWateringStart($waterZone['SensorID']);
+                    $totalSec = $dMin * 60;
+                    $elapsed = time() - $wStart;
+                    $pct = ($totalSec > 0) ? min(100, max(0, (int)round(($elapsed / $totalSec) * 100))) : 0;
+
+                    $barColor = ($pct < 50) ? '#0088FF' : (($pct < 85) ? '#00AACC' : '#00CC88');
+                    $progressBar = '<div style="margin-top: 10px; font-family: sans-serif;">'
+                        . '<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; opacity: 0.9;">'
+                        . '<span>' . $zoneName . ' &middot; ' . $cName . '</span>'
+                        . '<span style="font-weight: 600;">' . $pct . '%</span>'
+                        . '</div>'
+                        . '<div style="background: rgba(128,128,128,0.15); border-radius: 8px; height: 14px; overflow: hidden;">'
+                        . '<div style="background: linear-gradient(90deg, ' . $barColor . ', ' . $barColor . '88); width: ' . $pct . '%; height: 100%; border-radius: 8px; transition: width 1s ease;">'
+                        . '</div></div>'
+                        . '<div style="display: flex; justify-content: space-between; font-size: 11px; opacity: 0.6; margin-top: 4px;">'
+                        . '<span>Laufzeit: ' . floor($elapsed / 60) . ' Min</span>';
+
+                    if ($rem > 0) {
+                        $progressBar .= '<span>Verbleibend: ' . floor($rem / 60) . ':' . str_pad((string)($rem % 60), 2, '0', STR_PAD_LEFT) . ' Min</span>';
+                    }
+                    $progressBar .= '</div></div>';
+
+                    $baseStatus = $progressBar;
                 }
             } elseif ($sickerZone) {
                 $zoneName = isset($sickerZone['GroupName']) && !empty($sickerZone['GroupName']) ? $sickerZone['GroupName'] : 'Zone '. $sickerZone['SensorID'];
-                $baseStatus = 'Sickerpause: '. $zoneName;
+                $sickerStart = $this->GetZoneSickerpauseStart($sickerZone['SensorID']);
+                $sickerTotal = $this->GetZoneSickerpauseMinuten($sickerZone['SensorID']) * 60;
+                $sickerElapsed = time() - $sickerStart;
+                $sickerPct = ($sickerTotal > 0) ? min(100, max(0, (int)round(($sickerElapsed / $sickerTotal) * 100))) : 0;
+                $sickerRem = max(0, $sickerTotal - $sickerElapsed);
+
+                $baseStatus = '<div style="margin-top: 10px; font-family: sans-serif;">'
+                    . '<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; opacity: 0.9;">'
+                    . '<span>Sickerpause &middot; ' . $zoneName . '</span>'
+                    . '<span style="font-weight: 600;">' . $sickerPct . '%</span>'
+                    . '</div>'
+                    . '<div style="background: rgba(128,128,128,0.15); border-radius: 8px; height: 14px; overflow: hidden;">'
+                    . '<div style="background: linear-gradient(90deg, #FF9800, #FF980088); width: ' . $sickerPct . '%; height: 100%; border-radius: 8px; transition: width 1s ease;">'
+                    . '</div></div>'
+                    . '<div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">'
+                    . 'Verbleibend: ' . floor($sickerRem / 60) . ':' . str_pad((string)($sickerRem % 60), 2, '0', STR_PAD_LEFT) . ' Min'
+                    . '</div></div>';
             } elseif ($queuedZone) {
                 $zoneName = isset($queuedZone['GroupName']) && !empty($queuedZone['GroupName']) ? $queuedZone['GroupName'] : 'Zone '. $queuedZone['SensorID'];
                 $baseStatus = 'Bewässerung startet: '. $zoneName;

@@ -157,6 +157,7 @@ class SmartLawnAI extends IPSModuleStrict {
         
         // NEU: Gemini Retry Timer
         $this->RegisterTimer('GeminiRetryTimer', 0, 'SLAI_ProcessGeminiRetry($_IPS[\'TARGET\']);');
+        $this->RegisterTimer('ResetForceStart', 0, 'IPS_RequestAction($_IPS[\'TARGET\'], \'ResetForceStart\', true);');
         
     }
 
@@ -178,7 +179,7 @@ class SmartLawnAI extends IPSModuleStrict {
                 $this->SetTimerInterval('LawnAITimer', 0);
                 $this->resetAllZones(false);
             } else {
-                $this->SetTimerInterval('LawnAITimer', 1000);
+                $this->SetTimerInterval('LawnAITimer', 5000);
                 $this->SetBuffer('LastPlanCalculation', '0');
                 $this->AddLogEvent("System: Bereit", "Automatik aktiviert. Zeitpläne aktiv.", '#4CAF50');
                 $this->ProcessLogic();
@@ -187,9 +188,11 @@ class SmartLawnAI extends IPSModuleStrict {
             if ($Value) {
                 $this->SetValue($Ident, true);
                 $this->triggerManualStart();
-                IPS_Sleep(500);
-                $this->SetValue($Ident, false);
+                $this->SetTimerInterval('ResetForceStart', 500);
             }
+        } else if ($Ident === 'ResetForceStart') {
+            $this->SetTimerInterval('ResetForceStart', 0);
+            $this->SetValue('ForceStart', false);
         }
     }
 
@@ -243,13 +246,13 @@ class SmartLawnAI extends IPSModuleStrict {
          
         if (!IPS_VariableExists($this->GetIDForIdent('AutomaticActive')) || (GetValue($this->GetIDForIdent('AutomaticActive')) === false && IPS_GetVariable($this->GetIDForIdent('AutomaticActive'))['VariableUpdated'] == 0)) {
             $this->SetValue('AutomaticActive', true); // Default true
-            $this->SetTimerInterval('LawnAITimer', 1000);
+            $this->SetTimerInterval('LawnAITimer', 5000);
             $this->MaintainScheduleEvents(true);
         } else {
             $active = GetValue($this->GetIDForIdent('AutomaticActive'));
             $this->MaintainScheduleEvents($active);
             if ($active) {
-                $this->SetTimerInterval('LawnAITimer', 1000);
+                $this->SetTimerInterval('LawnAITimer', 5000);
             } else {
                 $this->SetTimerInterval('LawnAITimer', 0);
             }
@@ -367,7 +370,7 @@ class SmartLawnAI extends IPSModuleStrict {
             if ($res['ValveID'] > 0) {
                 $this->SafeRequestAction($res['ValveID'], 'START_SECONDS_TO_OVERRIDE');
             }
-            echo "START Befehl (5 Min) gesendet an ". $valveID . "(DurationID: ". $res['DurationID'] . ", ActionID: ". $res['ValveID'] . ")\n";
+            $this->SLogDebug('RunTestCommand', "START Befehl (5 Min) gesendet an ". $valveID . "(DurationID: ". $res['DurationID'] . ", ActionID: ". $res['ValveID'] . ")");
         } elseif ($command === 'STOP') {
             if ($res['ValveID'] > 0) {
                 if (IPS_VariableExists($res['ValveID']) && in_array(strtolower(IPS_GetObject($res['ValveID'])['ObjectIdent']), ['action', 'valvecontrol', 'control'])) {
@@ -376,7 +379,7 @@ class SmartLawnAI extends IPSModuleStrict {
                     $this->SafeRequestAction($res['ValveID'], false);
                 }
             }
-            echo "STOP Befehl gesendet an ". $valveID . "\n";
+            $this->SLogDebug('RunTestCommand', "STOP Befehl gesendet an ". $valveID);
         }
     }
     
@@ -642,13 +645,13 @@ class SmartLawnAI extends IPSModuleStrict {
                 {
                     "type": "Button",
                     "caption": "Test: Start Ventil 25027 (5 Min)",
-                    "onClick": "echo 'Sende Start-Befehl...'; SLAI_RunTestCommand($id, 25027, 'START');",
+                    "onClick": "SLAI_RunTestCommand($id, 25027, 'START');",
                     "icon": "Play"
                 },
                 {
                     "type": "Button",
                     "caption": "Test: Stop Ventil 25027",
-                    "onClick": "echo 'Sende Stop-Befehl...'; SLAI_RunTestCommand($id, 25027, 'STOP');",
+                    "onClick": "SLAI_RunTestCommand($id, 25027, 'STOP');",
                     "icon": "Stop"
                 }
             ]

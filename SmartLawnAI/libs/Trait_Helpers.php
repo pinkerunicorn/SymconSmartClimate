@@ -132,7 +132,7 @@ trait SmartLawnAI_Helpers {
         }
     }
 
-    public function AddLogEvent(string $title, string $details = '', string $color = '#2196F3') {
+    public function AddLogEvent(string $title, string $details = '', string $color = '#2196F3'): void {
         $logVarID = $this->GetIDForIdent('IrrigationLog');
         $currentLog = GetValue($logVarID);
         

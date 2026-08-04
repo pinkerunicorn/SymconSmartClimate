@@ -226,16 +226,21 @@ trait SmartLawnAI_Logic {
                     if (in_array($hwStr, ['ERROR', 'WARNING', 'OFFLINE', 'DEFECT', 'FAULT'])) {
                         $sName = isset($s['SprinklerName']) && !empty($s['SprinklerName']) ? $s['SprinklerName'] : 'Sprinkler '. $s['ValveID'];
                         $this->LogAndDebug('Hardware-Check', 'Zone '. $zone['SensorID'] . ''. $sName . 'meldet Fehler: '. $hwStr, 0);
+                        $this->LogAndDebug('Hardware-Check', 'Zone ' . $zone['SensorID'] . ' ' . $sName . ' meldet Fehler: ' . $hwStr, 0);
                         $hardwareFehler = true;
                         $fehlerhafterSprinklerName = $sName;
-                        break;
                     }
                 }
             }
             if ($hardwareFehler) {
-                $this->SLogError('HARDWARE_FEHLER', 'Zone: ' . $zone['SensorID'] . ' | Sprinkler: ' . $fehlerhafterSprinklerName . ' meldet Defekt');
+                $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone ' . $zone['SensorID'];
+                $hwVal = GetValue($res['HardwareStatusID']);
+                $hwDetail = 'Sprinkler: ' . $fehlerhafterSprinklerName . ' | Status: ' . strtoupper((string)$hwVal);
+                $this->SetValue('DeviceAvailable', 0);
                 $this->SetZoneStatus($zone['SensorID'], 'HARDWARE_FEHLER');
-                continue; 
+                $this->SLogError('Hardware-Fehler ' . ($zone['GroupName'] ?? $zone['SensorID']), $hwDetail);
+                $this->AddLogEvent("{$zoneName}: Hardware Fehler", $hwDetail, '#F44336');
+                continue;
             }
 
             $currentIndex = $this->GetZoneCurrentSprinklerIndex($zone['SensorID']);
@@ -275,26 +280,30 @@ trait SmartLawnAI_Logic {
 
                             // Start-Befehl senden (Gardena spezifisch)
                             $startErfolgreich = false;
+                            $startError = '';
                             if ($res['ValveID'] > 0) {
                                 if (IPS_VariableExists($res['ValveID']) && in_array(strtolower(IPS_GetObject($res['ValveID'])['ObjectIdent']), ['action', 'valvecontrol', 'control'])) {
-                                    $startErfolgreich = $this->SafeRequestAction($res['ValveID'], 'START_SECONDS_TO_OVERRIDE');
+                                    $startErfolgreich = $this->SafeRequestAction($res['ValveID'], 'START_SECONDS_TO_OVERRIDE', $startError);
                                 } else {
-                                    $startErfolgreich = $this->SafeRequestAction($res['ValveID'], true);
+                                    $startErfolgreich = $this->SafeRequestAction($res['ValveID'], true, $startError);
                                 }
+                            } else {
+                                $startError = 'ValveID nicht aufloesbar (ValveID=0)';
                             }
                             
                             if ($startErfolgreich) {
-                                $this->SLogInfo('Bewässerungs-Startbefehl gesendet', 'Zone: ' . $zone['SensorID'] . ' | Sprinkler: ' . $currentSprinklerName);
+                                $this->SetValue('DeviceAvailable', 1);
+                                $this->SLogInfo('Bewaesserungs-Startbefehl gesendet', 'Zone: ' . $zone['SensorID'] . ' | Sprinkler: ' . $currentSprinklerName);
                                 $this->SetZoneStatus($zone['SensorID'], 'WAITING_FOR_OPEN');
                                 $this->SetZoneWateringStart($zone['SensorID'], time());
                                 $this->SetZoneCurrentSprinklerIndex($zone['SensorID'], $currentIndex);
-                                $this->AddLogEvent("{$zoneName}: Starte Bewässerung", "Sprinkler: {$currentSprinklerName}", '#2196F3');
+                                $this->AddLogEvent("{$zoneName}: Starte Bewaesserung", "Sprinkler: {$currentSprinklerName}", '#2196F3');
                                 
-                                // Zwischenspeichern für den Lern-Algorithmus später
+                                // Zwischenspeichern fuer den Lern-Algorithmus spaeter
                                 $this->SetZoneStartFeuchte($zone['SensorID'], $aktuelleFeuchte);
                                 $this->SetZoneDauer($zone['SensorID'], $berechneteMinuten);
                                 
-                                // Wasserzähler-Startwert merken (nur beim Start der Zone oder wenn Buffer leer)
+                                // Wasserzaehler-Startwert merken (nur beim Start der Zone oder wenn Buffer leer)
                                 $wLiterID = $this->GetWaterMeterLiterVarID();
                                 if ($wLiterID > 0) {
                                     $existingBuffer = $this->GetBuffer('WaterMeterStart_' . $zone['SensorID']);
@@ -303,12 +312,16 @@ trait SmartLawnAI_Logic {
                                     }
                                 }
                                 
-                                $einVentilIstAktiv = true; 
+                                $einVentilIstAktiv = true;
                             } else {
-                                $this->LogAndDebug('Sequencer', 'Fehler: Start-Befehl für Zone '. $zone['SensorID'] . 'konnte nicht gesendet werden.', 0);
+                                $errDetail = $startError !== '' ? $startError : 'SafeRequestAction gab false zurueck';
+                                $errInfo = 'Ventil-ID: ' . $res['ValveID'] . ' | ' . $errDetail;
+                                $this->SetValue('DeviceAvailable', 0);
                                 $this->SetZoneStatus($zone['SensorID'], 'HARDWARE_FEHLER');
-                                $this->AddLogEvent("{$zoneName}: Hardware Fehler", "API oder Sendefehler beim Starten", '#F44336');
-                            } 
+                                $this->LogAndDebug('Sequencer', 'HARDWARE_FEHLER Zone ' . $zone['SensorID'] . ': ' . $errInfo, 0);
+                                $this->AddLogEvent("{$zoneName}: Hardware Fehler", $errInfo, '#F44336');
+                                $this->SLogError('Hardware-Fehler Zone ' . ($zone['GroupName'] ?? $zone['SensorID']), $errInfo);
+                            }
                         }
                     } else {
                         $this->SetZoneStatus($zone['SensorID'], 'IDLE');
@@ -353,9 +366,10 @@ trait SmartLawnAI_Logic {
                     if ($aktuellerStatus === 'WAITING_FOR_OPEN') {
                         if ($ventilOffen) {
                             $this->LogAndDebug('Sequencer', 'Rückmeldung erhalten: Ventil ist OFFEN. Bewässerung läuft.', 0);
+                            $this->SetValue('DeviceAvailable', 1);
+                            $this->SetValue('DeviceAvailable', 1); // Ventil offen bestaetigt
+                            $this->LogAndDebug('Sequencer', 'Rueckmeldung erhalten: Ventil ist OFFEN. Bewaesserung laeuft.', 0);
                             $this->SetZoneStatus($zone['SensorID'], 'WATERING');
-                            $this->SetZoneWateringStart($zone['SensorID'], time()); // ECHTE Startzeit!
-                            // Fallback: Wasserzähler-Startwert erfassen falls bisher leer
                             $wLiterID = $this->GetWaterMeterLiterVarID();
                             if ($wLiterID > 0 && $this->GetBuffer('WaterMeterStart_' . $zone['SensorID']) === '') {
                                 $this->SetBuffer('WaterMeterStart_' . $zone['SensorID'], (string)GetValue($wLiterID));

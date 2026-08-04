@@ -168,13 +168,19 @@ trait SmartLawnAI_Helpers {
         $this->SetValue('IrrigationLog', $updatedLog);
     }
 
-    protected function SafeRequestAction(int $variableID, $value): bool {
-        if (!IPS_VariableExists($variableID)) return false;
+    protected function SafeRequestAction(int $variableID, $value, string &$errorMsg = ''): bool {
+        if (!IPS_VariableExists($variableID)) {
+            $errorMsg = 'Variable ID ' . $variableID . ' existiert nicht';
+            return false;
+        }
         try {
-            return RequestAction($variableID, $value);
+            $result = RequestAction($variableID, $value);
+            $errorMsg = '';
+            return $result !== false;
         } catch (\Throwable $e) {
-            $this->LogAndDebug('SafeRequestAction', 'Fehler beim Senden an ID ' . $variableID . ': ' . $e->getMessage(), 0);
-            $this->SLogError('Sende-Fehler', 'Sende-Fehler an ID ' . $variableID . ': ' . $e->getMessage());
+            $errorMsg = $e->getMessage();
+            $this->LogAndDebug('SafeRequestAction', 'Fehler beim Senden an ID ' . $variableID . ': ' . $errorMsg, 0);
+            $this->SLogError('Sende-Fehler', 'Ventil-ID ' . $variableID . ': ' . $errorMsg);
             return false;
         }
     }

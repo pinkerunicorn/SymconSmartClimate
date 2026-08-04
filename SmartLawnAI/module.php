@@ -115,6 +115,38 @@ class SmartLawnAI extends IPSModuleStrict {
             'ICON' => 'Clock'
         ], 206);
 
+        // Geraete-Status Variable (Position 901 = Diagnostik)
+        $daIntervals = json_encode([
+            [
+                'IntervalMinValue' => 0, 'IntervalMaxValue' => 1,
+                'ConstantActive' => true, 'ConstantValue' => 'Fehler',
+                'ConversionFactor' => 1,
+                'PrefixActive' => false, 'PrefixValue' => '',
+                'SuffixActive' => false, 'SuffixValue' => '',
+                'DigitsActive' => false, 'DigitsValue' => 0,
+                'IconActive' => true, 'IconValue' => 'Warning',
+                'ColorActive' => true, 'ColorValue' => 0xFF4444,
+                'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF
+            ],
+            [
+                'IntervalMinValue' => 1, 'IntervalMaxValue' => 2,
+                'ConstantActive' => true, 'ConstantValue' => 'Alles OK',
+                'ConversionFactor' => 1,
+                'PrefixActive' => false, 'PrefixValue' => '',
+                'SuffixActive' => false, 'SuffixValue' => '',
+                'DigitsActive' => false, 'DigitsValue' => 0,
+                'IconActive' => true, 'IconValue' => 'Ok',
+                'ColorActive' => true, 'ColorValue' => 0x00CC00,
+                'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF
+            ]
+        ]);
+        $this->RegisterVariableInteger('DeviceAvailable', 'Geraetestatus', [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON' => 'Information',
+            'INTERVALS_ACTIVE' => true,
+            'INTERVALS' => $daIntervals
+        ], 901);
+
         // Wasserverbrauch-Variablen
         $this->RegisterVariableFloat("CurrentFlowRate", "Aktueller Durchfluss", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
@@ -306,6 +338,13 @@ class SmartLawnAI extends IPSModuleStrict {
         // Alte Variable entfernen (durch Echtzeit-Zählung ersetzt)
         $this->UnregisterVariable('WaterLastSession');
 
+
+        // DeviceAvailable: beim Start auf OK setzen (wird bei Fehlern auf 0 gesetzt)
+        if (GetValue($this->GetIDForIdent('DeviceAvailable')) === 0) {
+            // Nur zuruecksetzen wenn vorher kein Init-Wert vorhanden war
+        }
+        // Archivierung des Geraetestatus
+        $this->EnableArchive($this->GetIDForIdent('DeviceAvailable'));
         // Wasserverbrauch Archiv
         $waterVars = [
             'CurrentFlowRate',

@@ -974,11 +974,19 @@ $result = GIO_Query(' . $geminiId . ',
         $this->SetTimerInterval('LawnAITimer', 1000); // ProcessLogic wird im nächsten Tick aufgerufen
     }
 
-    public function CheckAllHardwareStatus(): bool {
+    public function CheckAllHardwareStatus(): string {
+        $cloudInstID = $this->ReadPropertyInteger('GardenaSplitterID');
+        if ($cloudInstID > 0 && IPS_InstanceExists($cloudInstID)) {
+            $inst = IPS_GetInstance($cloudInstID);
+            if ($inst['InstanceStatus'] >= 200) {
+                return 'Gardena Cloud/Splitter offline (Status: ' . $inst['InstanceStatus'] . ')';
+            }
+        }
+
         $zonesJson = $this->ReadPropertyString('Zones');
-        if (empty($zonesJson)) return true;
+        if (empty($zonesJson)) return '';
         $zones = json_decode($zonesJson, true);
-        if (!is_array($zones)) return true;
+        if (!is_array($zones)) return '';
         
         $sprinklersJson = $this->ReadPropertyString('Sprinklers');
         $sprinklers = empty($sprinklersJson) ? [] : json_decode($sprinklersJson, true);
@@ -986,10 +994,11 @@ $result = GIO_Query(' . $geminiId . ',
 
         foreach ($zones as $zone) {
             if (!$this->isZoneHardwareOk($zone, $sprinklers)) {
-                return false;
+                $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $zone['SensorID'];
+                return 'Defekter Sprinkler in ' . $zoneName;
             }
         }
-        return true;
+        return '';
     }
 
     private function isZoneHardwareOk(array $zone, array $sprinklers): bool {

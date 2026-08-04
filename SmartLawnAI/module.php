@@ -205,11 +205,12 @@ class SmartLawnAI extends IPSModuleStrict {
             }
         } else if ($Ident === 'AutomaticActive') {
             if ($Value) {
-                if (!$this->CheckAllHardwareStatus()) {
-                    $this->SLogError('Automatik', 'Hardware-Fehler erkannt, Automatik wird nicht aktiviert.');
-                    $this->AddLogEvent('Hardware Fehler', 'Automatik Start verweigert. Bitte Sprinkler pruefen.', '#F44336');
+                $hwError = $this->CheckAllHardwareStatus();
+                if ($hwError !== '') {
+                    $this->SLogError('Automatik', 'Hardware-Fehler: ' . $hwError);
+                    $this->AddLogEvent('Hardware Fehler', 'Automatik Start verweigert: ' . $hwError, '#F44336');
                     $this->SetValue('DeviceAvailable', 0);
-                    echo 'Hardware-Fehler! Bitte Log pruefen.';
+                    echo 'Hardware-Fehler: ' . $hwError;
                     return;
                 }
                 $this->SetValue('DeviceAvailable', 1);

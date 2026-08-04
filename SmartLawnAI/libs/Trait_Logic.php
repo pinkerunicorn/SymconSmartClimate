@@ -86,13 +86,15 @@ trait SmartLawnAI_Logic {
             return; 
         }
 
-        // Zustände, die eine aktive oder startende Zone signalisieren
-        $aktiveStatus = ['WATERING', 'WAITING_FOR_OPEN', 'WAITING_FOR_RESULT', 'QUEUED'];
+        // Zustände, die ein physisch aktives Ventil signalisieren (blockiert andere Zonen)
+        $blockierendeStatus = ['WATERING', 'WAITING_FOR_OPEN', 'WAITING_FOR_RESULT'];
+        // Für die Anzeige: QUEUED zählt auch als "aktiv" (Bewässerung läuft)
+        $displayAktivStatus = ['WATERING', 'WAITING_FOR_OPEN', 'WAITING_FOR_RESULT', 'QUEUED'];
         $einVentilIstAktiv = false;
         $anyQueued = false;
         foreach ($zones as $zone) {
             $status = $this->GetZoneStatus($zone['SensorID']);
-            if (in_array($status, $aktiveStatus)) {
+            if (in_array($status, $blockierendeStatus)) {
                 $einVentilIstAktiv = true;
                 $this->LogAndDebug('Sequencer', 'Ein anderes Ventil blockiert die Sequenz ('. $status . ' bei Zone '. $zone['SensorID'] . '). Warte...', 0);
             }
@@ -101,12 +103,14 @@ trait SmartLawnAI_Logic {
             }
         }
         
+        // WateringActive: Zeigt "Bewässert" wenn ein Ventil läuft ODER Zonen in Warteschlange stehen
+        $displayAktiv = $einVentilIstAktiv || $anyQueued;
         $wasActive = $this->GetValue('WateringActive');
-        $this->SetValue('WateringActive', $einVentilIstAktiv);
-        if ($wasActive !== $einVentilIstAktiv && function_exists('SHC_SetIrrigationActive')) {
+        $this->SetValue('WateringActive', $displayAktiv);
+        if ($wasActive !== $displayAktiv && function_exists('SHC_SetIrrigationActive')) {
             $shcInstances = IPS_GetInstanceListByModuleID('{460D7C60-0766-4534-BFD8-5920737B1845}');
             if (!empty($shcInstances)) {
-                SHC_SetIrrigationActive($shcInstances[0], $einVentilIstAktiv);
+                SHC_SetIrrigationActive($shcInstances[0], $displayAktiv);
             }
         }
 
@@ -437,7 +441,7 @@ trait SmartLawnAI_Logic {
         $finalAktiv = false;
         foreach ($zones as $zone) {
             $status = $this->GetZoneStatus($zone['SensorID']);
-            if (in_array($status, $aktiveStatus)) {
+            if (in_array($status, $displayAktivStatus)) {
                 $finalAktiv = true;
                 break;
             }

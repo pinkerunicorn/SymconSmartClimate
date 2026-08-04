@@ -34,6 +34,12 @@ trait SmartLawnAI_Helpers {
             }
             return 'Wartet auf Ventil';
         }
+        if (strpos($longStatus, 'Bewässerung startet:') !== false) {
+            if (preg_match('/Bewässerung startet: (.*)/', $longStatus, $m)) {
+                return $m[1] . ' startet';
+            }
+            return 'Start läuft';
+        }
         if (strpos($longStatus, 'Bewässere:') !== false) {
             return str_replace('Bewässere: ', '', $longStatus) . ' startet';
         }

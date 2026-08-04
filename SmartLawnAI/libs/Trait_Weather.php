@@ -15,15 +15,15 @@ trait SmartLawnAI_Weather {
         try {
             $omContent = Sys_GetURLContent($omUrl);
         } catch (\Throwable $e) {
-            $this->SLogError("SLAI_UpdateWeatherForecast: Fehler beim Abrufen der Wetterdaten: " . $e->getMessage());
+            $this->SLogError('Wetterdaten-Abruf fehlgeschlagen', $e->getMessage());
             return;
         }
         if ($omContent !== false) {
             $omData = json_decode($omContent, true);
             if (isset($omData['daily']) && isset($omData['daily']['precipitation_sum'])) {
                 $sums = $omData['daily']['precipitation_sum'];
-                if (isset($sums[0])) SetValue($this->GetIDForIdent('ForecastRainToday'), (float)$sums[0]);
-                if (isset($sums[1])) SetValue($this->GetIDForIdent('ForecastRainTomorrow'), (float)$sums[1]);
+                if (isset($sums[0])) $this->SetValue('ForecastRainToday', (float)$sums[0]);
+                if (isset($sums[1])) $this->SetValue('ForecastRainTomorrow', (float)$sums[1]);
                 $this->LogAndDebug('Weather', 'Open-Meteo Regen-Vorhersage aktualisiert: Heute ' . (float)$sums[0] . 'mm, Morgen ' . (float)$sums[1] . 'mm', 0);
             }
         } else {

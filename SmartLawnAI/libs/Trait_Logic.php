@@ -87,7 +87,7 @@ trait SmartLawnAI_Logic {
         }
 
         // Zustände, die eine aktive oder startende Zone signalisieren
-        $aktiveStatus = ['WATERING', 'WAITING_FOR_OPEN', 'WAITING_FOR_RESULT'];
+        $aktiveStatus = ['WATERING', 'WAITING_FOR_OPEN', 'WAITING_FOR_RESULT', 'QUEUED'];
         $einVentilIstAktiv = false;
         $anyQueued = false;
         foreach ($zones as $zone) {
@@ -339,6 +339,7 @@ trait SmartLawnAI_Logic {
                     }
                     
                     if ($aktuellerStatus === 'WATERING') {
+                    $remaining = 0;
                     if ($res['RemainingSecondsID'] > 0) {
                         $remaining = (int)GetValue($res['RemainingSecondsID']);
                     } else {
@@ -429,6 +430,20 @@ trait SmartLawnAI_Logic {
             }
         }
 
+        // 4b. Finaler WateringActive-Status nach dem Zonen-Durchlauf
+        $finalAktiv = false;
+        foreach ($zones as $zone) {
+            $status = $this->GetZoneStatus($zone['SensorID']);
+            if (in_array($status, $aktiveStatus)) {
+                $finalAktiv = true;
+                break;
+            }
+        }
+        $this->SetValue('WateringActive', $finalAktiv);
+        if ($wasActive !== $finalAktiv && function_exists('SHC_SetIrrigationActive')) {
+            SHC_SetIrrigationActive($finalAktiv);
+        }
+
         // 5. Wasserzähler Tages-/Wochen-/Monatsreset
         $today = date('Y-m-d');
         $week  = date('oW');   // ISO Jahr + Wochennummer
@@ -515,7 +530,10 @@ trait SmartLawnAI_Logic {
             } elseif ($sickerZone) {
                 $zoneName = isset($sickerZone['GroupName']) && !empty($sickerZone['GroupName']) ? $sickerZone['GroupName'] : 'Zone '. $sickerZone['SensorID'];
                 $baseStatus = 'Sickerpause: '. $zoneName;
-            } elseif (!$einVentilIstAktivOderFehler && strpos($baseStatus, 'Berechne') === false && strpos($baseStatus, 'Manueller Start') === false) {
+            } elseif ($queuedZone) {
+                $zoneName = isset($queuedZone['GroupName']) && !empty($queuedZone['GroupName']) ? $queuedZone['GroupName'] : 'Zone '. $queuedZone['SensorID'];
+                $baseStatus = 'Bewässerung startet: '. $zoneName;
+            } elseif (!$einVentilIstAktivOderFehler && strpos($baseStatus, 'Berechne') === false && strpos($baseStatus, 'Manueller Start') === false && strpos($baseStatus, 'Plan berechnet') === false) {
                 $nextTime = $this->GetNextScheduleTime();
                 if ($nextTime > 0) {
                     $dayStr = (date('Y-m-d', $nextTime) === date('Y-m-d')) ? 'heute': 'morgen';
@@ -810,13 +828,16 @@ $result = GIO_Query(' . $geminiId . ',
         } else {
             $this->SetSummaryStatus('Standby (Boden ausreichend feucht)');
         }
+
+        // Timer sofort auf 1s setzen, damit ProcessLogic() im nächsten Tick die Ventile startet
+        $this->SetTimerInterval('LawnAITimer', 1000);
     }
 
-    private function resetAllZones(bool $queueForStart): void {
+    private function resetAllZones(bool $queueForStart, bool $silent = false): void {
         $actionName = $queueForStart ? 'ManualStart (Hard Reset)': 'Automatik Off (Hard Stop)';
         $this->LogAndDebug('Reset', $actionName . 'aufgerufen', 0);
         
-        if (!$queueForStart) {
+        if (!$queueForStart && !$silent) {
             $this->SLogWarning('Automatik deaktiviert', 'Alle Ventile werden gestoppt und Zonen zurückgesetzt.');
             $this->SetSummaryStatus('Automatik deaktiviert (Zonen gestoppt)');
             $this->AddLogEvent("System: Abbruch", "Automatik deaktiviert, alle Ventile gestoppt.", '#F44336');
@@ -875,9 +896,9 @@ $result = GIO_Query(' . $geminiId . ',
         $this->SetSummaryStatus('Manueller Start angefordert...');
         $this->LogAndDebug('ManualStart', 'Manueller Start angefordert. Setze Zonen zurück...', 0);
         $this->AddLogEvent("System: Manueller Start", "Bewässerung wird sofort gestartet...", '#2196F3');
-        $this->resetAllZones(true); // Nutze true, damit es nicht als Abbruch geloggt wird, aber setze Status später richtig
+        $this->resetAllZones(false, true); // Zonen nur stoppen, nicht sofort QUEUED setzen (Race Condition vermeiden)
         $this->SetBuffer('CalculatePlanPending', 'true');
-        $this->ProcessLogic();
+        $this->SetTimerInterval('LawnAITimer', 1000); // ProcessLogic wird im nächsten Tick aufgerufen
     }
 
     private function isZoneHardwareOk(array $zone, array $sprinklers): bool {

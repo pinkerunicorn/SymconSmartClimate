@@ -169,13 +169,16 @@ class SmartWaterMonitor extends IPSModuleStrict
                     return "OK";
                 }
                 
-                $multiplier = $this->ReadPropertyFloat('VolumeMultiplier');
-                if ($multiplier > 0 && $multiplier != 1.0) {
-                    $value = $value * $multiplier;
-                }
+                $rawValue = $value;
                 
                 // Flow Rate
                 if (strpos($topic, 'flow') !== false || strpos($topic, 'rate') !== false) {
+                    $value = $rawValue;
+                    $multiplier = $this->ReadPropertyFloat('VolumeMultiplier');
+                    if ($multiplier > 0 && $multiplier != 1.0) {
+                        $value = $value * $multiplier;
+                    }
+                    
                     $currentFlow = $this->GetValue('FlowRate');
                     
                     if ($value == 0 || $currentFlow == 0) {
@@ -217,18 +220,23 @@ class SmartWaterMonitor extends IPSModuleStrict
                 // Total Consumption (ESP sends Liters)
                 elseif (strpos($topic, 'total') !== false) {
                     $lastRaw = $this->ReadAttributeFloat('LastRawTotal');
-                    $delta = $value - $lastRaw;
+                    $deltaRaw = $rawValue - $lastRaw;
                     
                     // If delta is negative, the ESP likely rebooted and started from 0 again.
-                    // In this case, the delta is just the new value.
-                    if ($delta < 0) {
-                        $delta = $value;
+                    if ($deltaRaw < 0) {
+                        $deltaRaw = $rawValue;
                     }
                     
-                    $this->WriteAttributeFloat('LastRawTotal', $value);
+                    $this->WriteAttributeFloat('LastRawTotal', $rawValue);
                     
                     // Add delta to our persistent Symcon variables
-                    if ($delta > 0) {
+                    if ($deltaRaw > 0) {
+                        $delta = $deltaRaw;
+                        $multiplier = $this->ReadPropertyFloat('VolumeMultiplier');
+                        if ($multiplier > 0 && $multiplier != 1.0) {
+                            $delta = $delta * $multiplier;
+                        }
+                        
                         $currentLiters = $this->GetValue('TotalConsumptionLiter');
                         $newLiters = $currentLiters + $delta;
                         

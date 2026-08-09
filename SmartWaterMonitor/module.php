@@ -16,6 +16,7 @@ class SmartWaterMonitor extends IPSModuleStrict
         $this->RegisterPropertyString('MQTTBaseTopic', 'watermeter');
         $this->RegisterPropertyInteger('MaxContinuousFlowMinutes', 45); // 45 minutes default
         $this->RegisterPropertyInteger('IrrigationVariableID', 0);
+        $this->RegisterPropertyFloat('VolumeMultiplier', 1.0);
         
         $this->SetReceiveDataFilter('.*' . preg_quote($this->ReadPropertyString('MQTTBaseTopic')) . '.*');
 
@@ -166,6 +167,11 @@ class SmartWaterMonitor extends IPSModuleStrict
                 // ESPHome sends 'nan' if a sensor is currently unavailable
                 if (!is_finite($value)) {
                     return "OK";
+                }
+                
+                $multiplier = $this->ReadPropertyFloat('VolumeMultiplier');
+                if ($multiplier > 0 && $multiplier != 1.0) {
+                    $value = $value * $multiplier;
                 }
                 
                 // Flow Rate

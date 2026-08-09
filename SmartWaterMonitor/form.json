@@ -14,6 +14,18 @@
         },
         {
             "type": "Label",
+            "caption": "Falls der Wasserzähler falsche Werte liefert, kannst du hier einen Multiplikator (Faktor) eintragen. Beispiel: Zähler zeigt 40 Liter statt 10 an -> Faktor 0.25 eintragen."
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "VolumeMultiplier",
+            "caption": "Korrekturfaktor",
+            "minimum": 0.001,
+            "maximum": 1000.0,
+            "digits": 4
+        },
+        {
+            "type": "Label",
             "caption": "Hier stellst du ein, nach wie vielen Minuten ununterbrochenem Wasserfluss ein Leckage-Alarm ausgelöst werden soll. (0 = Deaktiviert)"
         },
         {

@@ -9,11 +9,6 @@
             "items": [
                 {
                     "type": "CheckBox",
-                    "name": "EnableHeating",
-                    "caption": "Heizkörpersteuerung aktivieren"
-                },
-                {
-                    "type": "CheckBox",
                     "name": "EnableFrostProtection",
                     "caption": "Frostschutz (Heizlüfter) aktivieren"
                 },
@@ -47,16 +42,6 @@
                         { "type": "SelectVariable", "name": "SensorHumInside", "caption": "Feuchtigkeit Innen" }
                     ]
                 }
-            ]
-        },
-        {
-            "type": "ExpansionPanel",
-            "caption": "🔥 Heizkörper (Heizungssteuerung)",
-            "visible": "EnableHeating",
-            "items": [
-                { "type": "SelectVariable", "name": "ActuatorRadiator1", "caption": "Heizkörper 1 (Zieltemperatur)" },
-                { "type": "SelectVariable", "name": "ActuatorRadiator2", "caption": "Heizkörper 2 (Zieltemperatur)" },
-                { "type": "NumberSpinner", "name": "TargetTemperature", "caption": "Standard Zieltemperatur (°C)", "digits": 1 }
             ]
         },
         {

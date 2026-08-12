@@ -14,7 +14,6 @@ class SmartClimateZone extends IPSModuleStrict
         parent::Create();
 
         // Feature Toggles
-        $this->RegisterPropertyBoolean("EnableHeating", false);
         $this->RegisterPropertyBoolean("EnableFrostProtection", false);
         $this->RegisterPropertyBoolean("EnableDehumidifier", false);
         $this->RegisterPropertyBoolean("EnableAirQuality", false);
@@ -32,11 +31,6 @@ class SmartClimateZone extends IPSModuleStrict
         $this->RegisterPropertyFloat("VentilationThreshold", 0.5);
         $this->RegisterPropertyFloat("VentilationCloseMargin", 0.3);
 
-        // Heating Properties
-        $this->RegisterPropertyInteger("ActuatorRadiator1", 0);
-        $this->RegisterPropertyInteger("ActuatorRadiator2", 0);
-        $this->RegisterPropertyFloat("TargetTemperature", 18.0);
-        
         // Frost Protection Properties
         $this->RegisterPropertyInteger("ActuatorHeaterPlug", 0);
         $this->RegisterPropertyInteger("SensorHeaterPower", 0);
@@ -99,13 +93,7 @@ class SmartClimateZone extends IPSModuleStrict
         
         $this->MaintainCoreVariables();
 
-        // 2. Heating
-        if ($this->ReadPropertyBoolean("EnableHeating")) {
-            $this->RegisterSensorReferenceAndMessage('ActuatorRadiator1', false);
-            $this->RegisterSensorReferenceAndMessage('ActuatorRadiator2', false);
-        }
-        
-        // 3. Frost Protection
+        // 2. Frost Protection
         if ($this->ReadPropertyBoolean("EnableFrostProtection")) {
             $this->RegisterSensorReferenceAndMessage('ActuatorHeaterPlug', false);
             $this->RegisterSensorReferenceAndMessage('SensorHeaterPower');
@@ -474,30 +462,11 @@ class SmartClimateZone extends IPSModuleStrict
         if ($this->ReadPropertyBoolean("EnableDehumidifier") && $humIn !== null) {
             $this->ControlDehumidifier($humIn, $windowOpen);
         }
-        if ($this->ReadPropertyBoolean("EnableHeating") && $humIn !== null) {
-            $this->ControlHeating($humIn);
-        }
         if ($this->ReadPropertyBoolean("EnableFrostProtection") && $tempIn !== null) {
             $this->ControlFrostProtection($tempIn, $windowOpen);
         }
         if ($this->ReadPropertyBoolean("EnableAirQuality")) {
             $this->UpdateAirQuality();
-        }
-    }
-    
-    private function ControlHeating(float $humIn): void {
-        $rad1 = $this->ReadPropertyInteger("ActuatorRadiator1");
-        $rad2 = $this->ReadPropertyInteger("ActuatorRadiator2");
-        $targetBase = $this->ReadPropertyFloat("TargetTemperature");
-        
-        $targetTemp = $targetBase;
-        if ($humIn > 70.0) $targetTemp += 2.0;
-        
-        if ($rad1 > 0 && IPS_VariableExists($rad1) && GetValue($rad1) != $targetTemp) {
-            @RequestAction($rad1, $targetTemp);
-        }
-        if ($rad2 > 0 && IPS_VariableExists($rad2) && GetValue($rad2) != $targetTemp) {
-            @RequestAction($rad2, $targetTemp);
         }
     }
     

@@ -214,10 +214,10 @@ trait SmartLawnAI_Helpers {
                 $obj = IPS_GetObject($child);
                 $ident = strtolower($obj['ObjectIdent']);
                 
-                if (in_array($ident, ['action', 'valvecontrol', 'control'])) $res['ValveID'] = $child;
+                if (in_array($ident, ['action', 'valvecontrol', 'control', 'watering'])) $res['ValveID'] = $child;
                 elseif (in_array($ident, ['state', 'status'])) $res['HardwareStatusID'] = $child;
-                elseif ($res['HardwareStatusID'] === 0 && in_array($ident, ['lasterror', 'errorcode', 'lasterrorcode'])) $res['HardwareStatusID'] = $child;
-                elseif (in_array($ident, ['duration', 'valveduration'])) {
+                elseif ($res['HardwareStatusID'] === 0 && in_array($ident, ['lasterror', 'errorcode', 'lasterrorcode', 'valveerror'])) $res['HardwareStatusID'] = $child;
+                elseif (in_array($ident, ['duration', 'valveduration', 'wateringduration'])) {
                     if ($ident === 'valveduration') {
                         if ($res['DurationID'] !== 0) {
                             $res['RemainingSecondsID'] = $res['DurationID'];
@@ -230,7 +230,7 @@ trait SmartLawnAI_Helpers {
                     }
                 }
                 elseif (in_array($ident, ['remaining', 'remainingtime'])) $res['RemainingSecondsID'] = $child;
-                elseif ($ident === 'activity') $res['ActivityID'] = $child;
+                elseif (in_array($ident, ['activity', 'valveactivity'])) $res['ActivityID'] = $child;
             }
         }
         return $res;

@@ -227,7 +227,10 @@ trait SmartLawnAI_Logic {
                 if ($res['HardwareStatusID'] > 0) {
                     $hwStatus = GetValue($res['HardwareStatusID']);
                     $hwStr = strtoupper((string)$hwStatus);
-                    if (in_array($hwStr, ['ERROR', 'WARNING', 'OFFLINE', 'DEFECT', 'FAULT'])) {
+                    // String-basierte Prüfung (altes Gardena-Modul) + Integer-Prüfung (neues Modul: 0=OK, >0=Fehler)
+                    $istFehler = in_array($hwStr, ['ERROR', 'WARNING', 'OFFLINE', 'DEFECT', 'FAULT'])
+                                 || (is_int($hwStatus) && $hwStatus > 0);
+                    if ($istFehler) {
                         $sName = isset($s['SprinklerName']) && !empty($s['SprinklerName']) ? $s['SprinklerName'] : 'Sprinkler '. $s['ValveID'];
                         $this->LogAndDebug('Hardware-Check', 'Zone ' . $zone['SensorID'] . ' ' . $sName . ' meldet Fehler: ' . $hwStr, 0);
                         $hardwareFehler = true;
@@ -346,7 +349,7 @@ trait SmartLawnAI_Logic {
                             $act = strtoupper((string)$v);
                         }
                         $hwVal = $act;
-                        $ventilOffen = (strpos($act, 'WATERING') !== false || strpos($act, 'BEWÄSSERUNG') !== false || strpos($act, 'OPEN') !== false || strpos($act, 'GEÖFFNET') !== false || $act === '1'|| $v == 1 || $v == 2 || $v == 3);
+                        $ventilOffen = (strpos($act, 'WATERING') !== false || strpos($act, 'BEWÄSSERUNG') !== false || strpos($act, 'BEWAESSERUNG') !== false || strpos($act, 'OPEN') !== false || strpos($act, 'GEÖFFNET') !== false || $act === 'MANUELLE BEWAESSERUNG' || $act === 'ZEITPLAN AKTIV' || $v == 1 || $v == 2);
                     }
                     elseif ($res['HardwareStatusID'] > 0) {
                         $hwVal = strtoupper((string)GetValue($res['HardwareStatusID']));
@@ -1086,7 +1089,10 @@ $result = GIO_Query(' . $geminiId . ',
                 if ($res['HardwareStatusID'] > 0) {
                     $hwStatus = GetValue($res['HardwareStatusID']);
                     $hwStr = strtoupper((string)$hwStatus);
-                    if (in_array($hwStr, ['ERROR', 'WARNING', 'OFFLINE', 'DEFECT', 'FAULT'])) {
+                    // String-basierte Prüfung (altes Modul) + Integer-Prüfung (neues Modul: 0=OK, >0=Fehler)
+                    $istFehler = in_array($hwStr, ['ERROR', 'WARNING', 'OFFLINE', 'DEFECT', 'FAULT'])
+                                 || (is_int($hwStatus) && $hwStatus > 0);
+                    if ($istFehler) {
                         return false;
                     }
                 }

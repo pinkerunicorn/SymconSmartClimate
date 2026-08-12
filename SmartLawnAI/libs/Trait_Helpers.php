@@ -235,6 +235,45 @@ trait SmartLawnAI_Helpers {
         }
         return $res;
     }
+
+    /**
+     * Loest eine Sensor-Objekt-ID auf.
+     * Akzeptiert entweder:
+     *   - Eine Variable-ID (z.B. Bodenfeuchte) → wird direkt als MoistureID verwendet
+     *   - Eine Instanz-ID (z.B. GardenaSensor) → SoilMoisture + SoilTemperature werden aufgeloest
+     */
+    public function ResolveSensorObject(int $objectId): array {
+        $res = [
+            'MoistureID' => 0,
+            'TemperatureID' => 0
+        ];
+
+        if ($objectId <= 0) return $res;
+
+        // Fall 1: Direkte Variable-ID (backward compatible)
+        if (IPS_VariableExists($objectId)) {
+            $res['MoistureID'] = $objectId;
+            return $res;
+        }
+
+        // Fall 2: Instanz-ID → Kinder-Variablen aufloesen
+        if (IPS_InstanceExists($objectId)) {
+            $children = IPS_GetChildrenIDs($objectId);
+            foreach ($children as $child) {
+                if (!IPS_VariableExists($child)) continue;
+                $obj = IPS_GetObject($child);
+                $ident = strtolower($obj['ObjectIdent']);
+                
+                if (in_array($ident, ['soilmoisture', 'soilhumidity', 'humidity', 'moisture', 'feuchte'])) {
+                    $res['MoistureID'] = $child;
+                }
+                elseif (in_array($ident, ['soiltemperature', 'bodentemperatur'])) {
+                    $res['TemperatureID'] = $child;
+                }
+            }
+        }
+        return $res;
+    }
     /**
      * Gibt die ID der TotalConsumptionLiter-Variable des SmartWaterMonitors zurück.
      * SmartWaterMonitor GUID: {09A99311-87CD-480B-A7B8-6DC226136CFB}

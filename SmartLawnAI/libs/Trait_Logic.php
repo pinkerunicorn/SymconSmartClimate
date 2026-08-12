@@ -35,8 +35,9 @@ trait SmartLawnAI_Logic {
         $defaultStart = GetValue($this->GetIDForIdent('DefaultStartSchwellwert'));
         $needsWater = false;
         foreach ($zones as $zone) {
-            if (!IPS_VariableExists($zone['SensorID'])) continue;
-            $aktuelleFeuchte = GetValue($zone['SensorID']);
+            $sensor = $this->ResolveSensorObject((int)$zone['SensorID']);
+            if ($sensor['MoistureID'] <= 0 || !IPS_VariableExists($sensor['MoistureID'])) continue;
+            $aktuelleFeuchte = GetValue($sensor['MoistureID']);
             if ($aktuelleFeuchte <= $defaultStart) {
                 $needsWater = true;
                 break;
@@ -206,8 +207,10 @@ trait SmartLawnAI_Logic {
                 }
             }
 
-            if (!IPS_VariableExists($zone['SensorID'])) continue;
-            $aktuelleFeuchte = GetValue($zone['SensorID']);
+            if (!IPS_VariableExists($zone['SensorID']) && !IPS_InstanceExists($zone['SensorID'])) continue;
+            $sensor = $this->ResolveSensorObject((int)$zone['SensorID']);
+            if ($sensor['MoistureID'] <= 0) continue;
+            $aktuelleFeuchte = GetValue($sensor['MoistureID']);
             $aktuellerStatus = $this->GetZoneStatus($zone['SensorID']);
             if (empty($aktuellerStatus)) {
                 $aktuellerStatus = 'IDLE';
@@ -723,6 +726,11 @@ trait SmartLawnAI_Logic {
         $zonesContext = [];
         foreach ($zones as $zone) {
             $sid = $zone['SensorID'];
+            $sensor = $this->ResolveSensorObject((int)$sid);
+            if ($sensor['MoistureID'] <= 0) {
+                $this->LogAndDebug('Planer', 'Zone '. $sid . ' uebersprungen (Feuchte-Variable nicht aufloesbar).', 0);
+                continue;
+            }
             if (!$this->isZoneHardwareOk($zone, $sprinklers)) {
                 $this->LogAndDebug('Planer', 'Zone '. $sid . 'übersprungen (Hardware-Fehler).', 0);
                 $this->SetZoneStatus($sid, 'HARDWARE_FEHLER');
@@ -731,7 +739,13 @@ trait SmartLawnAI_Logic {
 
             $zielWert  = $defaultZiel;
             $startWert = $defaultStart;
-            $aktuelleFeuchte = GetValue($sid);
+            $aktuelleFeuchte = GetValue($sensor['MoistureID']);
+
+            // Bodentemperatur vom Sensor lesen (falls verfuegbar)
+            $soilTemp = null;
+            if ($sensor['TemperatureID'] > 0 && IPS_VariableExists($sensor['TemperatureID'])) {
+                $soilTemp = (float)GetValue($sensor['TemperatureID']);
+            }
 
             // ERZWINGE EREIGNISSTEUERUNG:
             // Zone nur beplanen, wenn manueller Start oder Trigger-Schwellwert erreicht!
@@ -746,7 +760,7 @@ trait SmartLawnAI_Logic {
             if ($effizienz <= 0) $effizienz = 1.0;
             $maxDuration = GetValue($this->GetIDForIdent('GlobalMaxDuration'));
 
-            $zonesContext[] = [
+            $zoneContext = [
                 'zoneId'=> (int)$sid,
                 'groupName'=> isset($zone['GroupName']) ? $zone['GroupName'] : ('Zone '. $sid),
                 'currentMoisturePercent'=> $aktuelleFeuchte,
@@ -755,6 +769,10 @@ trait SmartLawnAI_Logic {
                 'learnedEfficiencyPercentPerMinute'=> $effizienz,
                 'maxDurationMinutes'=> $maxDuration
             ];
+            if ($soilTemp !== null) {
+                $zoneContext['soilTemperatureCelsius'] = $soilTemp;
+            }
+            $zonesContext[] = $zoneContext;
         }
 
         if (empty($zonesContext)) {

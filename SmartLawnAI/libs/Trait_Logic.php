@@ -38,6 +38,13 @@ trait SmartLawnAI_Logic {
             $sensor = $this->ResolveSensorObject((int)$zone['SensorID']);
             if ($sensor['MoistureID'] <= 0 || !IPS_VariableExists($sensor['MoistureID'])) continue;
             $aktuelleFeuchte = GetValue($sensor['MoistureID']);
+            // 0% = Sensorstoerung (Batterie leer, Funk weg, defekt) - NICHT bewaessern!
+            if ($aktuelleFeuchte <= 0) {
+                $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $zone['SensorID'];
+                $this->SLogWarning('Sensorstoerung ' . $zoneName, 'Feuchte = 0% ist unplausibel. Zone wird uebersprungen.');
+                $this->AddLogEvent("{$zoneName}: Sensorstoerung", "Feuchte 0% - Sensor defekt/offline? Zone wird nicht bewaessert.", '#F44336');
+                continue;
+            }
             if ($aktuelleFeuchte <= $defaultStart) {
                 $needsWater = true;
                 break;
@@ -740,6 +747,14 @@ trait SmartLawnAI_Logic {
             $zielWert  = $defaultZiel;
             $startWert = $defaultStart;
             $aktuelleFeuchte = GetValue($sensor['MoistureID']);
+
+            // Plausibilitaetspruefung: 0% = Sensorstoerung - Zone NICHT bewaessern!
+            if ($aktuelleFeuchte <= 0) {
+                $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $sid;
+                $this->SLogWarning('Sensorstoerung ' . $zoneName, 'Feuchte = 0% ist unplausibel. Zone wird uebersprungen.');
+                $this->AddLogEvent("{$zoneName}: Sensorstoerung", "Feuchte 0% - Sensor defekt/offline? Zone wird nicht bewaessert.", '#F44336');
+                continue;
+            }
 
             // Bodentemperatur vom Sensor lesen (falls verfuegbar)
             $soilTemp = null;

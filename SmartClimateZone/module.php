@@ -18,6 +18,7 @@ class SmartClimateZone extends IPSModuleStrict
         $this->RegisterPropertyBoolean("EnableDehumidifier", false);
         $this->RegisterPropertyBoolean("EnableAirQuality", false);
         $this->RegisterPropertyBoolean("EnableFreeCooling", false);
+        $this->RegisterPropertyInteger("RegistryID", 0);
         
         $this->RegisterPropertyFloat("TargetCoolingTemp", 23.0);
         $this->RegisterPropertyFloat("MoldWarningThreshold", 60.0);
@@ -32,7 +33,7 @@ class SmartClimateZone extends IPSModuleStrict
         $this->RegisterPropertyFloat("VentilationCloseMargin", 0.3);
 
         // Frost Protection Properties
-        $this->RegisterPropertyInteger("ActuatorHeaterPlug", 0);
+        $this->RegisterPropertyString("ActuatorHeaterPlug", "0");
         $this->RegisterPropertyInteger("SensorHeaterPower", 0);
         $this->RegisterPropertyFloat("Hysteresis", 0.5);
         $this->RegisterPropertyFloat("HeaterPowerThreshold", 50.0);
@@ -40,7 +41,7 @@ class SmartClimateZone extends IPSModuleStrict
         $this->RegisterPropertyFloat("FrostWarningTemp", 3.0);
 
         // Dehumidifier Properties
-        $this->RegisterPropertyInteger("ActuatorDehumidifierPlug", 0);
+        $this->RegisterPropertyString("ActuatorDehumidifierPlug", "0");
         $this->RegisterPropertyInteger("SensorDehumidifierPower", 0);
         $this->RegisterPropertyFloat("DehumidifierMaxHum", 60.0);
         $this->RegisterPropertyFloat("DehumidifierMinHum", 55.0);
@@ -83,6 +84,38 @@ class SmartClimateZone extends IPSModuleStrict
         }
         $this->UnregisterAllMessages();
 
+        $this->RegisterReference($this->ReadPropertyInteger('RegistryID'));
+        
+        // Cache devices for registry
+        $regId = $this->ReadPropertyInteger('RegistryID');
+        $socketMap = [];
+        if ($regId > 0 && @IPS_InstanceExists($regId)) {
+            $sockets = @SDR_GetDevicesByType($regId, 'DevicesSocket');
+            if (is_array($sockets)) {
+                foreach ($sockets as $s) {
+                    $key = ($s['room'] ?? '') . '::' . ($s['name'] ?? 'Unbenannt');
+                    $socketMap[$key] = $s['OnOff_VarID'] ?? 0;
+                    if (isset($s['Power_VarID'])) {
+                        $socketMap[$key . '::Power'] = $s['Power_VarID'];
+                    }
+                }
+            }
+        }
+        $this->SetBuffer('SocketMapCache', json_encode($socketMap));
+        
+        $contactMap = [];
+        if ($regId > 0 && @IPS_InstanceExists($regId)) {
+            $contacts = @SDR_GetDevicesByType($regId, 'DevicesContactSensor');
+            if (is_array($contacts)) {
+                foreach ($contacts as $c) {
+                    $key = ($c['room'] ?? '') . '::' . ($c['name'] ?? 'Unbenannt');
+                    $contactMap[$key] = $c['Status_VarID'] ?? 0;
+                }
+            }
+        }
+        $this->SetBuffer('ContactMapCache', json_encode($contactMap));
+
+
         // 1. Core Registration
         $this->RegisterSensorReferenceAndMessage('SensorTempInside');
         $this->RegisterSensorReferenceAndMessage('SensorTempOutside');
@@ -95,8 +128,19 @@ class SmartClimateZone extends IPSModuleStrict
 
         // 2. Frost Protection
         if ($this->ReadPropertyBoolean("EnableFrostProtection")) {
-            $this->RegisterSensorReferenceAndMessage('ActuatorHeaterPlug', false);
-            $this->RegisterSensorReferenceAndMessage('SensorHeaterPower');
+            $plugKey = $this->ReadPropertyString('ActuatorHeaterPlug');
+            $plugId = $this->resolveSocketId($plugKey);
+            if ($plugId > 0 && IPS_VariableExists($plugId)) {
+                $this->RegisterReference($plugId);
+            }
+            $powerKey = is_numeric($plugKey) ? '' : ($plugKey . '::Power');
+            $powerId = $powerKey !== '' ? $this->resolveSocketId($powerKey) : $this->ReadPropertyInteger('SensorHeaterPower');
+            if ($powerId <= 0) $powerId = $this->ReadPropertyInteger('SensorHeaterPower');
+            if ($powerId > 0 && IPS_VariableExists($powerId)) {
+                $this->RegisterReference($powerId);
+                $this->RegisterMessage($powerId, VM_UPDATE);
+            }
+            $this->SetBuffer('ResolvedHeaterPower', (string)$powerId);
             $this->MaintainFrostVariables(true);
         } else {
             $this->MaintainFrostVariables(false);
@@ -104,8 +148,19 @@ class SmartClimateZone extends IPSModuleStrict
 
         // 4. Dehumidifier
         if ($this->ReadPropertyBoolean("EnableDehumidifier")) {
-            $this->RegisterSensorReferenceAndMessage('ActuatorDehumidifierPlug', false);
-            $this->RegisterSensorReferenceAndMessage('SensorDehumidifierPower');
+            $plugKey = $this->ReadPropertyString('ActuatorDehumidifierPlug');
+            $plugId = $this->resolveSocketId($plugKey);
+            if ($plugId > 0 && IPS_VariableExists($plugId)) {
+                $this->RegisterReference($plugId);
+            }
+            $powerKey = is_numeric($plugKey) ? '' : ($plugKey . '::Power');
+            $powerId = $powerKey !== '' ? $this->resolveSocketId($powerKey) : $this->ReadPropertyInteger('SensorDehumidifierPower');
+            if ($powerId <= 0) $powerId = $this->ReadPropertyInteger('SensorDehumidifierPower');
+            if ($powerId > 0 && IPS_VariableExists($powerId)) {
+                $this->RegisterReference($powerId);
+                $this->RegisterMessage($powerId, VM_UPDATE);
+            }
+            $this->SetBuffer('ResolvedDehumidifierPower', (string)$powerId);
             $this->MaintainDehumidifierVariables(true);
             
             $defaultMax = $this->ReadPropertyFloat("DehumidifierMaxHum");
@@ -142,6 +197,53 @@ class SmartClimateZone extends IPSModuleStrict
                 $this->RegisterMessage($id, VM_UPDATE);
             }
         }
+    }
+
+    private function resolveSocketId(string|int $idStr): int
+    {
+        if (is_numeric($idStr)) {
+            return (int)$idStr;
+        }
+        $map = json_decode($this->GetBuffer('SocketMapCache') ?: '[]', true) ?: [];
+        return (int)($map[$idStr] ?? 0);
+    }
+
+    private function getRegistrySocketOptions(int $regId): array
+    {
+        $options = [['label' => '(Manuell per Variable)', 'value' => "0"]];
+        if ($regId <= 0 || !@IPS_InstanceExists($regId)) return $options;
+        $devices = @SDR_GetDevicesByType($regId, 'DevicesSocket');
+        if (!is_array($devices)) return $options;
+        $dynamicOptions = [];
+        foreach ($devices as $dev) {
+            $name = ($dev['room'] ?? '') . ' / ' . ($dev['name'] ?? 'Unbenannt');
+            $varId = (int)($dev['OnOff_VarID'] ?? 0);
+            $deviceKey = ($dev['room'] ?? '') . '::' . ($dev['name'] ?? 'Unbenannt');
+            if ($varId > 0) {
+                $dynamicOptions[] = ['label' => $name, 'value' => $deviceKey];
+            }
+        }
+        usort($dynamicOptions, fn($a, $b) => strcasecmp($a['label'], $b['label']));
+        return array_merge($options, $dynamicOptions);
+    }
+
+    private function getRegistryContactSensorOptions(int $regId): array
+    {
+        $options = [['label' => '(Manuell per Variable)', 'value' => 0]];
+        if ($regId <= 0 || !@IPS_InstanceExists($regId)) return $options;
+        $devices = @SDR_GetDevicesByType($regId, 'DevicesContactSensor');
+        if (!is_array($devices)) return $options;
+        $dynamicOptions = [];
+        foreach ($devices as $dev) {
+            $name = ($dev['room'] ?? '') . ' / ' . ($dev['name'] ?? 'Unbenannt');
+            $varId = (int)($dev['Status_VarID'] ?? 0);
+            $deviceKey = ($dev['room'] ?? '') . '::' . ($dev['name'] ?? 'Unbenannt');
+            if ($varId > 0) {
+                $dynamicOptions[] = ['label' => $name, 'value' => $deviceKey];
+            }
+        }
+        usort($dynamicOptions, fn($a, $b) => strcasecmp($a['label'], $b['label']));
+        return array_merge($options, $dynamicOptions);
     }
 
     private function MaintainCoreVariables(): void {
@@ -343,8 +445,10 @@ class SmartClimateZone extends IPSModuleStrict
     }
 
     public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void{
-        $powerIdDehum = $this->ReadPropertyInteger("SensorDehumidifierPower");
-        $powerIdHeat  = $this->ReadPropertyInteger("SensorHeaterPower");
+        $powerIdDehum = (int)$this->GetBuffer('ResolvedDehumidifierPower');
+        if ($powerIdDehum <= 0) $powerIdDehum = $this->ReadPropertyInteger("SensorDehumidifierPower");
+        $powerIdHeat  = (int)$this->GetBuffer('ResolvedHeaterPower');
+        if ($powerIdHeat <= 0) $powerIdHeat = $this->ReadPropertyInteger("SensorHeaterPower");
         $radonShortId = $this->ReadPropertyInteger("SensorRadonShortTerm");
         $radonLongId  = $this->ReadPropertyInteger("SensorRadonLongTerm");
         $co2Id        = $this->ReadPropertyInteger("SensorCO2");
@@ -486,7 +590,7 @@ class SmartClimateZone extends IPSModuleStrict
         $hysteresis = $this->ReadPropertyFloat("Hysteresis");
         $warningTemp = $this->ReadPropertyFloat("FrostWarningTemp");
         
-        $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
+        $plugId = $this->resolveSocketId($this->ReadPropertyString("ActuatorHeaterPlug"));
         $isHeating = ($plugId > 0 && IPS_VariableExists($plugId)) ? GetValue($plugId) : false;
         $newHeatingState = $isHeating;
         
@@ -507,7 +611,7 @@ class SmartClimateZone extends IPSModuleStrict
     }
     
     private function SetHeaterPlug(bool $state, int $statusText): void {
-        $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
+        $plugId = $this->resolveSocketId($this->ReadPropertyString("ActuatorHeaterPlug"));
         if ($plugId > 0 && IPS_VariableExists($plugId)) {
             if (GetValue($plugId) != $state) {
                 @RequestAction($plugId, $state);
@@ -517,7 +621,7 @@ class SmartClimateZone extends IPSModuleStrict
     }
     
     private function HandleHeaterPowerUpdate(float $power): void {
-        $plugId = $this->ReadPropertyInteger("ActuatorHeaterPlug");
+        $plugId = $this->resolveSocketId($this->ReadPropertyString("ActuatorHeaterPlug"));
         if ($plugId == 0 || !IPS_VariableExists($plugId)) return;
         
         $threshold = $this->ReadPropertyFloat("HeaterPowerThreshold");
@@ -554,7 +658,7 @@ class SmartClimateZone extends IPSModuleStrict
     }
 
     private function ControlDehumidifier(float $humIn, bool $windowOpen): void {
-        $plugId = $this->ReadPropertyInteger("ActuatorDehumidifierPlug");
+        $plugId = $this->resolveSocketId($this->ReadPropertyString("ActuatorDehumidifierPlug"));
         
         $maxHum   = $this->GetValue("DehumidifierMaxHum");
         $minHum   = $this->GetValue("DehumidifierMinHum");
@@ -582,7 +686,7 @@ class SmartClimateZone extends IPSModuleStrict
     }
     
     private function HandleDehumidifierPowerUpdate(float $currentPower): void {
-        $plugId = $this->ReadPropertyInteger("ActuatorDehumidifierPlug");
+        $plugId = $this->resolveSocketId($this->ReadPropertyString("ActuatorDehumidifierPlug"));
         if ($plugId == 0 || !IPS_VariableExists($plugId)) return;
         
         $threshold  = $this->ReadPropertyFloat("DehumidifierPowerThreshold");
@@ -659,5 +763,133 @@ class SmartClimateZone extends IPSModuleStrict
         
         $this->SetValueIfChanged("VOCStatus", $vStatus);
         $this->SetValueIfChanged("VOCRecommendation", $vRec);
+    }
+
+    public function GetConfigurationForm(): string {
+        $regId = $this->ReadPropertyInteger('RegistryID');
+        
+        $elements = [];
+        
+        $elements[] = [
+            'type' => 'ExpansionPanel',
+            'caption' => 'Feature Toggles',
+            'items' => [
+                ['type' => 'CheckBox', 'name' => 'EnableFrostProtection', 'caption' => 'Frostschutz (Heizlüfter) aktivieren'],
+                ['type' => 'CheckBox', 'name' => 'EnableDehumidifier', 'caption' => 'Luftentfeuchter aktivieren'],
+                ['type' => 'CheckBox', 'name' => 'EnableAirQuality', 'caption' => 'Spezialsensoren (Radon, CO2, VOC) aktivieren']
+            ]
+        ];
+        
+        $elements[] = [
+            'type' => 'ExpansionPanel',
+            'caption' => 'Geräte-Quelle',
+            'items' => [
+                ['type' => 'SelectInstance', 'name' => 'RegistryID', 'caption' => 'SymconSmartTools Device Registry']
+            ]
+        ];
+        
+        $elements[] = [
+            'type' => 'ExpansionPanel',
+            'caption' => 'Basis Sensoren',
+            'items' => [
+                [
+                    'type' => 'RowLayout',
+                    'items' => [
+                        ['type' => 'SelectVariable', 'name' => 'SensorTempOutside', 'caption' => 'Temperatur Außen'],
+                        ['type' => 'SelectVariable', 'name' => 'SensorHumOutside', 'caption' => 'Feuchtigkeit Außen']
+                    ]
+                ],
+                [
+                    'type' => 'RowLayout',
+                    'items' => [
+                        ['type' => 'SelectVariable', 'name' => 'SensorTempInside', 'caption' => 'Temperatur Innen'],
+                        ['type' => 'SelectVariable', 'name' => 'SensorHumInside', 'caption' => 'Feuchtigkeit Innen']
+                    ]
+                ]
+            ]
+        ];
+        
+        $frostItems = [];
+        $sockets = $this->getRegistrySocketOptions($regId);
+        if (count($sockets) > 1) {
+            $frostItems[] = ['type' => 'Select', 'name' => 'ActuatorHeaterPlug', 'caption' => 'Schaltsteckdose Heizlüfter', 'options' => $sockets];
+            $frostItems[] = ['type' => 'Label', 'caption' => 'Leistungsmessung wird automatisch aus Registry ermittelt.'];
+        } else {
+            $frostItems[] = ['type' => 'SelectVariable', 'name' => 'ActuatorHeaterPlug', 'caption' => 'Schaltsteckdose Heizlüfter'];
+            $frostItems[] = ['type' => 'SelectVariable', 'name' => 'SensorHeaterPower', 'caption' => 'Leistungsmessung (Watt)'];
+        }
+        $frostItems[] = ['type' => 'NumberSpinner', 'name' => 'HeaterPowerThreshold', 'caption' => 'Leistungsschwelle (Watt)', 'digits' => 1];
+        $frostItems[] = ['type' => 'NumberSpinner', 'name' => 'HeaterDefectTime', 'caption' => 'Defekt-Timer (Sek)'];
+        $frostItems[] = ['type' => 'NumberSpinner', 'name' => 'Hysteresis', 'caption' => 'Schalt-Hysterese (°C)', 'digits' => 1];
+        $frostItems[] = ['type' => 'NumberSpinner', 'name' => 'FrostWarningTemp', 'caption' => 'Kritische Frostwarnung ab (°C)', 'digits' => 1];
+        
+        $elements[] = [
+            'type' => 'ExpansionPanel',
+            'caption' => 'Frostschutz (Heizlüfter)',
+            'visible' => 'EnableFrostProtection',
+            'items' => $frostItems
+        ];
+        
+        $dehumItems = [];
+        if (count($sockets) > 1) {
+            $dehumItems[] = ['type' => 'Select', 'name' => 'ActuatorDehumidifierPlug', 'caption' => 'Schaltsteckdose Entfeuchter', 'options' => $sockets];
+            $dehumItems[] = ['type' => 'Label', 'caption' => 'Leistungsmessung wird automatisch aus Registry ermittelt.'];
+        } else {
+            $dehumItems[] = ['type' => 'SelectVariable', 'name' => 'ActuatorDehumidifierPlug', 'caption' => 'Schaltsteckdose Entfeuchter'];
+            $dehumItems[] = ['type' => 'SelectVariable', 'name' => 'SensorDehumidifierPower', 'caption' => 'Leistungsmessung (Watt)'];
+        }
+        $dehumItems[] = ['type' => 'NumberSpinner', 'name' => 'DehumidifierPowerThreshold', 'caption' => 'Leistungsschwelle (Watt)', 'digits' => 1];
+        $dehumItems[] = ['type' => 'NumberSpinner', 'name' => 'DehumidifierPowerTime', 'caption' => 'Tank Voll-Timer (Sek)'];
+        
+        $elements[] = [
+            'type' => 'ExpansionPanel',
+            'caption' => 'Luftentfeuchter',
+            'visible' => 'EnableDehumidifier',
+            'items' => $dehumItems
+        ];
+        
+        $elements[] = [
+            'type' => 'ExpansionPanel',
+            'caption' => 'Luftqualität',
+            'visible' => 'EnableAirQuality',
+            'items' => [
+                ['type' => 'SelectVariable', 'name' => 'SensorRadonShortTerm', 'caption' => 'Radon Kurzzeit (Bq/m³)'],
+                ['type' => 'SelectVariable', 'name' => 'SensorRadonLongTerm', 'caption' => 'Radon Langzeit (Bq/m³)'],
+                ['type' => 'SelectVariable', 'name' => 'SensorCO2', 'caption' => 'CO2 (ppm)'],
+                ['type' => 'SelectVariable', 'name' => 'SensorVOC', 'caption' => 'VOC (µg/m³)']
+            ]
+        ];
+        
+        $contacts = $this->getRegistryContactSensorOptions($regId);
+        $elements[] = [
+            'type' => 'List',
+            'name' => 'SensorWindows',
+            'caption' => 'Fenster-/Türkontakte',
+            'add' => true,
+            'delete' => true,
+            'columns' => [
+                [
+                    'caption' => 'Sensor',
+                    'name' => 'VariableID',
+                    'width' => 'auto',
+                    'add' => count($contacts) > 1 ? $contacts[0]['value'] : 0,
+                    'edit' => count($contacts) > 1 ? ['type' => 'Select', 'options' => $contacts] : ['type' => 'SelectVariable']
+                ],
+                [
+                    'caption' => 'Wert für Geschlossen',
+                    'name' => 'ClosedValue',
+                    'width' => '150px',
+                    'add' => false,
+                    'edit' => ['type' => 'ValidationTextBox']
+                ]
+            ]
+        ];
+        
+        return json_encode([
+            'status' => [
+                ['code' => 104, 'icon' => 'inactive', 'caption' => 'Sensor nicht konfiguriert']
+            ],
+            'elements' => $elements
+        ]);
     }
 }

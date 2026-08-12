@@ -651,12 +651,12 @@ class SmartLawnAI extends IPSModuleStrict {
                     }
                 },
                 {
-                    "caption": "Feuchte-Sensor",
+                    "caption": "Feuchte-Sensor (Variable oder Instanz)",
                     "name": "SensorID",
-                    "width": "250px",
+                    "width": "300px",
                     "add": 0,
                     "edit": {
-                        "type": "SelectVariable"
+                        "type": "SelectObject"
                     }
                 }
             ]

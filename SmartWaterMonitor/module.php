@@ -162,6 +162,22 @@ class SmartWaterMonitor extends IPSModuleStrict
             }
         }
         
+        // Auto-Detect SmartLawnAI
+        $smartLawnId = "{B6D219C1-F0B8-4FEF-9F59-7A6F5643B9D5}";
+        $lawnInstances = @IPS_GetInstanceListByModuleID($smartLawnId);
+        if (is_array($lawnInstances)) {
+            foreach ($lawnInstances as $inst) {
+                $monitorId = @IPS_GetProperty($inst, 'WaterMonitorInstanceID');
+                if ($monitorId == $this->InstanceID) {
+                    $wateringActiveVar = @IPS_GetObjectIDByIdent('WateringActive', $inst);
+                    if ($wateringActiveVar !== false && @GetValue($wateringActiveVar)) {
+                        $this->SLogInfo('Maximaler Dauerfluss erreicht, aber SmartLawnAI bewässert gerade. Kein Alarm.');
+                        return;
+                    }
+                }
+            }
+        }
+
         // Timer fired -> water running continuously for too long!
         $this->SetTimerInterval('LeakTimer', 0); // Stop timer
         $this->SetValue('LeakAlarm', true);
@@ -454,7 +470,7 @@ class SmartWaterMonitor extends IPSModuleStrict
                 ],
                 [
                     'type' => 'Label',
-                    'caption' => 'Wähle hier die Variable aus, die den Bewässerungs-Status anzeigt. So verhindern wir Fehlalarme während du gießt.'
+                    'caption' => 'Wähle hier die Variable aus, die den Bewässerungs-Status anzeigt. So verhindern wir Fehlalarme während du gießt. (Hinweis: Wenn du SmartLawnAI nutzt, wird die Bewässerung vollautomatisch erkannt, du musst hier nichts auswählen!)'
                 ]
             ],
             'actions' => [

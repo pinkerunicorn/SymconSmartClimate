@@ -359,4 +359,119 @@ class SmartWaterMonitor extends IPSModuleStrict
                 throw new Exception("Invalid ident");
         }
     }
+
+    private function getIrrigationOptions(int $regId): array
+    {
+        $options = [['label' => '(Keine / Manuell per Variable)', 'value' => 0]];
+        if ($regId <= 0 || !@IPS_InstanceExists($regId)) return $options;
+        
+        $sockets = @SDR_GetDevicesByType($regId, 'DevicesSocket');
+        if (!is_array($sockets)) $sockets = [];
+        $switches = @SDR_GetDevicesByType($regId, 'DevicesSwitch');
+        if (!is_array($switches)) $switches = [];
+        
+        $devices = array_merge($sockets, $switches);
+        
+        $dynamicOptions = [];
+        foreach ($devices as $dev) {
+            $name = ($dev['room'] ?? '') . ' / ' . ($dev['name'] ?? 'Unbenannt');
+            $varId = (int)($dev['OnOff_VarID'] ?? 0);
+            if ($varId > 0) {
+                // To prevent duplicates if same variable used multiple times
+                $found = false;
+                foreach($dynamicOptions as $o) {
+                    if ($o['value'] === $varId) { $found = true; break; }
+                }
+                if (!$found) {
+                    $dynamicOptions[] = ['label' => $name, 'value' => $varId];
+                }
+            }
+        }
+        usort($dynamicOptions, fn($a, $b) => strcasecmp($a['label'], $b['label']));
+        return array_merge($options, $dynamicOptions);
+    }
+
+    public function GetConfigurationForm(): string
+    {
+        $regId = $this->ReadPropertyInteger('RegistryID');
+        $irriOptions = $this->getIrrigationOptions($regId);
+
+        $form = [
+            'status' => [
+                [ 'code' => 104, 'icon' => 'inactive', 'caption' => 'Sensor nicht konfiguriert' ]
+            ],
+            'elements' => [
+                [
+                    'type' => 'Label',
+                    'caption' => 'Trage hier das MQTT Base Topic deines Wasserzählers ein, z.B. \'watermeter\'.'
+                ],
+                [
+                    'type' => 'ValidationTextBox',
+                    'name' => 'MQTTBaseTopic',
+                    'caption' => 'MQTT Base Topic'
+                ],
+                [
+                    'type' => 'Label',
+                    'caption' => 'Falls der Wasserzähler falsche Werte liefert, kannst du hier einen Multiplikator (Faktor) eintragen. Beispiel: Zähler zeigt 40 Liter statt 10 an -> Faktor 0.25 eintragen.'
+                ],
+                [
+                    'type' => 'NumberSpinner',
+                    'name' => 'VolumeMultiplier',
+                    'caption' => 'Korrekturfaktor',
+                    'minimum' => 0.001,
+                    'maximum' => 1000.0,
+                    'digits' => 4
+                ],
+                [
+                    'type' => 'Label',
+                    'caption' => 'Hier stellst du ein, nach wie vielen Minuten ununterbrochenem Wasserfluss ein Leckage-Alarm ausgelöst werden soll. (0 = Deaktiviert)'
+                ],
+                [
+                    'type' => 'NumberSpinner',
+                    'name' => 'MaxContinuousFlowMinutes',
+                    'caption' => 'Leckage-Alarm (Minuten)',
+                    'minimum' => 0,
+                    'maximum' => 1440,
+                    'suffix' => ' min'
+                ],
+                [
+                    'type' => 'Label',
+                    'caption' => 'Wähle hier die DeviceRegistry-Instanz aus, um den aktuellen Wasserpreis abzurufen.'
+                ],
+                [
+                    'type' => 'SelectInstance',
+                    'name' => 'RegistryID',
+                    'caption' => 'Device Registry',
+                    'validModules' => ['{F3B4A7D9-C59E-401A-B826-17D3B5C2849E}']
+                ],
+                [
+                    'type' => 'Label',
+                    'caption' => 'Wähle hier die Variable aus, die den Bewässerungs-Status anzeigt. So verhindern wir Fehlalarme während du gießt.'
+                ]
+            ],
+            'actions' => [
+                [
+                    'type' => 'Label',
+                    'caption' => 'Der Leckage-Alarm löst aus, wenn das Wasser ohne Pause länger fließt, als oben eingestellt.'
+                ]
+            ]
+        ];
+        
+        if (count($irriOptions) > 1) {
+            $form['elements'][] = [
+                'type' => 'Select',
+                'name' => 'IrrigationVariableID',
+                'caption' => 'Bewässerungs-Status',
+                'options' => $irriOptions
+            ];
+        } else {
+            $form['elements'][] = [
+                'type' => 'SelectVariable',
+                'name' => 'IrrigationVariableID',
+                'caption' => 'Bewässerungs-Status'
+            ];
+        }
+
+        return json_encode($form);
+    }
 }

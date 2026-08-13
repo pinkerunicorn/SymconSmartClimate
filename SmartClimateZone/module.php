@@ -17,6 +17,7 @@ class SmartClimateZone extends IPSModuleStrict
         $this->RegisterPropertyBoolean("EnableFrostProtection", false);
         $this->RegisterPropertyBoolean("EnableDehumidifier", false);
         $this->RegisterPropertyBoolean("EnableAirQuality", false);
+        $this->RegisterPropertyBoolean("ForceVentilationOnBadAir", false);
         $this->RegisterPropertyBoolean("EnableFreeCooling", false);
         $this->RegisterPropertyInteger("RegistryID", 0);
         
@@ -511,11 +512,29 @@ class SmartClimateZone extends IPSModuleStrict
             $dryerOutside = ($absOut <= ($absIn - $threshold));
             $colderOutside = ($tempOut < $tempIn);
             
+            $forceBadAir = 0;
+            if ($this->ReadPropertyBoolean("EnableAirQuality") && $this->ReadPropertyBoolean("ForceVentilationOnBadAir")) {
+                $r = @$this->GetValue("RadonStatus");
+                $c = @$this->GetValue("CO2Status");
+                $v = @$this->GetValue("VOCStatus");
+                if ($r >= 2 || $c >= 2 || $v >= 2) {
+                    $forceBadAir = 2;
+                } elseif ($r >= 1 || $c >= 1 || $v >= 1) {
+                    $forceBadAir = 1;
+                }
+            }
+            
             if (!$windowOpen) {
                 // Kann man Kühlen UND ist es draußen nicht feuchter? (Feuchtigkeit hat Vorrang!)
                 $canCool = ($enableCooling && ($tempIn > $targetCooling) && $colderOutside && ($absOut <= $absIn));
                 
-                if ($dryerOutside && $canCool) {
+                if ($forceBadAir === 2) {
+                    $recommendation = true;
+                    $details = "Lüften DRINGEND empfohlen! Luftqualität kritisch (Radon/CO2/VOC) - Außenklima ignoriert.";
+                } elseif ($forceBadAir === 1 && $dryerOutside) {
+                     $recommendation = true;
+                     $details = "Lüften empfohlen! Luftqualität verschlechtert und Außen ist trockener.";
+                } elseif ($dryerOutside && $canCool) {
                     $recommendation = true;
                     $details = sprintf("Lüften empfohlen! Kühlen & Trocknen möglich (Außen: %.1f°C, %.2f g/m³)", $tempOut, $absOut);
                 } elseif ($dryerOutside) {
@@ -525,7 +544,9 @@ class SmartClimateZone extends IPSModuleStrict
                     $recommendation = true;
                     $details = sprintf("Lüften empfohlen zum Kühlen (Außen: %.1f°C, Innen: %.1f°C).", $tempOut, $tempIn);
                 } else {
-                    if ($enableCooling && $colderOutside && ($absOut > $absIn)) {
+                    if ($forceBadAir === 1) {
+                        $details = sprintf("Luftqualität ist schlechter, aber Außenfeuchte/Temp aktuell nicht ideal zum Lüften.");
+                    } elseif ($enableCooling && $colderOutside && ($absOut > $absIn)) {
                         $details = sprintf("Nicht kühlen: Draußen ist es feuchter (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
                     } else {
                         $details = sprintf("Lüften lohnt nicht (Außen: %.2f g/m³, Innen: %.2f g/m³)", $absOut, $absIn);
@@ -550,7 +571,11 @@ class SmartClimateZone extends IPSModuleStrict
                     $alarmReason = sprintf("Fenster SCHLIESSEN! Außen wird es wärmer (Außen: %.1f°C, Innen: %.1f°C)", $tempOut, $tempIn);
                 }
 
-                if ($closeAlarm) {
+                if ($forceBadAir === 2) {
+                    $closeAlarm = false;
+                    $details = "Lüftung fortsetzen! Luftqualität ist kritisch.";
+                    $this->SetValueIfChanged("AlarmWindowClose", false);
+                } elseif ($closeAlarm) {
                     $details = $alarmReason;
                     $this->SetValueIfChanged("AlarmWindowClose", true);
                 } else {
@@ -853,6 +878,7 @@ class SmartClimateZone extends IPSModuleStrict
             'caption' => 'Luftqualität',
             'visible' => 'EnableAirQuality',
             'items' => [
+                ['type' => 'CheckBox', 'name' => 'ForceVentilationOnBadAir', 'caption' => 'Schlechte Luft erzwingt Lüftungsempfehlung (ignoriert Außenfeuchte)'],
                 ['type' => 'SelectVariable', 'name' => 'SensorRadonShortTerm', 'caption' => 'Radon Kurzzeit (Bq/m³)'],
                 ['type' => 'SelectVariable', 'name' => 'SensorRadonLongTerm', 'caption' => 'Radon Langzeit (Bq/m³)'],
                 ['type' => 'SelectVariable', 'name' => 'SensorCO2', 'caption' => 'CO2 (ppm)'],

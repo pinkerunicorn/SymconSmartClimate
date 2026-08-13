@@ -371,8 +371,9 @@ trait SmartLawnAI_Logic {
                         }
                     }
                     
-                    // Fallback: Wenn Sekunden noch > 0 sind, läuft es definitiv noch!
-                    if (!$ventilOffen && $res['RemainingSecondsID'] > 0) {
+                    // Fallback: Nur wenn KEIN ActivityID vorhanden ist (generische Ventile ohne Activity-Variable)
+                    // Wenn ActivityID vorhanden ist und CLOSED meldet, darf RemainingSeconds das NICHT ueberschreiben!
+                    if (!$ventilOffen && $res['ActivityID'] === 0 && $res['RemainingSecondsID'] > 0) {
                         if ((int)GetValue($res['RemainingSecondsID']) > 0) {
                             $ventilOffen = true;
                             $hwVal .= '(Kept alive by RemainingSeconds > 0)';

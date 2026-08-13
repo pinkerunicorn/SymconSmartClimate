@@ -17,6 +17,7 @@ class SmartWaterMonitor extends IPSModuleStrict
         $this->RegisterPropertyInteger('MaxContinuousFlowMinutes', 45); // 45 minutes default
         $this->RegisterPropertyInteger('IrrigationVariableID', 0);
         $this->RegisterPropertyFloat('VolumeMultiplier', 1.0);
+        $this->RegisterPropertyInteger('RegistryID', 0);
         
         $this->SetReceiveDataFilter('.*' . preg_quote($this->ReadPropertyString('MQTTBaseTopic')) . '.*');
 
@@ -93,13 +94,44 @@ class SmartWaterMonitor extends IPSModuleStrict
             'ICON'         => 'Drops'
         ], 4);
 
+        $this->RegisterVariableFloat("ConsumptionToday", "Verbrauch Heute", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'SUFFIX'       => ' m³',
+            'ICON'         => 'Drops',
+            'DIGITS'       => 3
+        ], 10);
+        $this->RegisterVariableFloat("CostToday", "Kosten Heute", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'SUFFIX'       => ' €',
+            'ICON'         => 'Euro',
+            'DIGITS'       => 2
+        ], 11);
+        
+        $this->RegisterVariableFloat("ConsumptionMonth", "Verbrauch dieser Monat", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'SUFFIX'       => ' m³',
+            'ICON'         => 'Drops',
+            'DIGITS'       => 3
+        ], 12);
+        $this->RegisterVariableFloat("CostMonth", "Kosten dieser Monat", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'SUFFIX'       => ' €',
+            'ICON'         => 'Euro',
+            'DIGITS'       => 2
+        ], 13);
+
         // Variables are read-only
 
         // Attributes (internal state)
         $this->RegisterAttributeFloat('LastRawTotal', 0.0);
+        $this->RegisterAttributeFloat('StartOfDayTotal', 0.0);
+        $this->RegisterAttributeFloat('StartOfMonthTotal', 0.0);
+        $this->RegisterAttributeString('LastUpdateDay', '');
+        $this->RegisterAttributeString('LastUpdateMonth', '');
 
         // Timer for Leak Detection
         $this->RegisterTimer('LeakTimer', 0, 'WATER_LeakTimerTriggered($_IPS[\'TARGET\']);');
+        $this->RegisterTimer('CostUpdateTimer', 15 * 60 * 1000, 'WATER_UpdateCosts($_IPS[\'TARGET\']);');
     }
 
     public function ApplyChanges(): void
@@ -114,6 +146,9 @@ class SmartWaterMonitor extends IPSModuleStrict
 
         // Register MQTT Filter
         $this->SetReceiveDataFilter('.*' . preg_quote($topic) . '.*');
+        
+        // Initialer Lauf der Kostenberechnung
+        $this->UpdateCosts();
     }
 
     public function LeakTimerTriggered(): void
@@ -133,9 +168,62 @@ class SmartWaterMonitor extends IPSModuleStrict
         $this->SLogError('LECKAGE-ALARM! Wasser fließt ununterbrochen seit ' . $this->ReadPropertyInteger('MaxContinuousFlowMinutes') . ' Minuten!');
     }
 
+    public function UpdateCosts(): void
+    {
+        $currentDate = date('Y-m-d');
+        $currentMonth = date('Y-m');
+        $total = $this->GetValue('TotalConsumption'); // in m³
 
+        $lastUpdateDay = $this->ReadAttributeString('LastUpdateDay');
+        $lastUpdateMonth = $this->ReadAttributeString('LastUpdateMonth');
 
-    public function ReceiveData(string $JSONString): string
+        if ($lastUpdateDay !== $currentDate) {
+            $this->WriteAttributeFloat('StartOfDayTotal', $total);
+            $this->WriteAttributeString('LastUpdateDay', $currentDate);
+            $this->SetValue('ConsumptionToday', 0.0);
+            $this->SetValue('CostToday', 0.0);
+        }
+
+        if ($lastUpdateMonth !== $currentMonth) {
+            $this->WriteAttributeFloat('StartOfMonthTotal', $total);
+            $this->WriteAttributeString('LastUpdateMonth', $currentMonth);
+            $this->SetValue('ConsumptionMonth', 0.0);
+            $this->SetValue('CostMonth', 0.0);
+        }
+
+        $startOfDay = $this->ReadAttributeFloat('StartOfDayTotal');
+        $startOfMonth = $this->ReadAttributeFloat('StartOfMonthTotal');
+
+        $consToday = $total - $startOfDay;
+        $consMonth = $total - $startOfMonth;
+
+        // Absicherung falls TotalConsumption mal zurückgesetzt wurde
+        if ($consToday < 0) $consToday = 0;
+        if ($consMonth < 0) $consMonth = 0;
+
+        $this->SetValue('ConsumptionToday', $consToday);
+        $this->SetValue('ConsumptionMonth', $consMonth);
+
+        // Hole Preise aus Registry
+        $regId = $this->ReadPropertyInteger('RegistryID');
+        $priceWater = 4.80;
+        $basePriceWater = 0.0;
+        if ($regId > 1 && @IPS_InstanceExists($regId)) {
+            $readPrice = @IPS_GetProperty($regId, 'PriceWater');
+            if ($readPrice !== false) $priceWater = $readPrice;
+            $readBase = @IPS_GetProperty($regId, 'BasePriceWater');
+            if ($readBase !== false) $basePriceWater = $readBase;
+        }
+
+        $dailyBase = $basePriceWater / 365.25;
+        $monthlyBase = $basePriceWater / 12.0;
+
+        $costToday = ($consToday * $priceWater) + $dailyBase;
+        $costMonth = ($consMonth * $priceWater) + $monthlyBase;
+
+        $this->SetValue('CostToday', $costToday);
+        $this->SetValue('CostMonth', $costMonth);
+    }
     {
         try {
             $data = json_decode($JSONString);
@@ -242,6 +330,8 @@ class SmartWaterMonitor extends IPSModuleStrict
                         
                         $this->SetValue('TotalConsumptionLiter', $newLiters);
                         $this->SetValue('TotalConsumption', $newLiters / 1000.0);
+                        
+                        $this->UpdateCosts();
                     }
                 }
             }

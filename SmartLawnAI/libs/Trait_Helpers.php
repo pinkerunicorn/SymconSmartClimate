@@ -366,31 +366,6 @@ trait SmartLawnAI_Helpers {
     }
 
     /**
-     * Setzt alle Zonen-Zustaende komplett zurueck.
-     * Wird aufgerufen beim Umschalten der Automatik (ein/aus).
-     */
-    protected function ResetAllZones(): void {
-        $zonesJson = $this->ReadPropertyString('Zones');
-        $zones = json_decode($zonesJson, true);
-        if (!is_array($zones)) return;
-
-        foreach ($zones as $zone) {
-            $sid = $zone['SensorID'];
-            $this->SetZoneStatus($sid, 'IDLE');
-            $this->SetZoneWateringStart($sid, 0);
-            $this->SetZoneSickerpauseStart($sid, 0);
-            $this->SetZoneCurrentSprinklerIndex($sid, 0);
-            $this->SetZoneDauer($sid, 0);
-            $this->SetBuffer('WaterMeterStart_' . $sid, '');
-        }
-
-        $this->SetValue('WateringActive', false);
-        $this->SetBuffer('LastPlanCalculation', '0');
-
-        $this->NotifySmartControllerIrrigation(false);
-    }
-
-    /**
      * Sicher den SmartController ueber Bewaesserungsstatus informieren.
      * Faengt Fehler ab wenn die Instanz nicht verfuegbar ist.
      */

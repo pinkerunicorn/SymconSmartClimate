@@ -204,8 +204,10 @@ class SmartLawnAI extends IPSModuleStrict {
                 $this->AddLogEvent('Sperrzeit deaktiviert', 'Bewässerung wieder freigegeben.', '#4CAF50');
             }
         } else if ($Ident === 'AutomaticActive') {
-            // Immer zuerst alle Zonen-Zustaende zuruecksetzen (egal ob ein/aus)
-            $this->ResetAllZones();
+            // Zuerst alle Zonen-Zustaende zuruecksetzen (silent=true: keine STOP-Befehle an API)
+            $this->resetAllZones(false, true);
+            $this->SetValue('WateringActive', false);
+            $this->NotifySmartControllerIrrigation(false);
 
             if ($Value) {
                 $hwError = $this->CheckAllHardwareStatus();

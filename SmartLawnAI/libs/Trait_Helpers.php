@@ -387,12 +387,21 @@ trait SmartLawnAI_Helpers {
         $this->SetValue('WateringActive', false);
         $this->SetBuffer('LastPlanCalculation', '0');
 
-        // SmartController benachrichtigen
-        if (function_exists('SHC_SetIrrigationActive')) {
-            $shcInstances = IPS_GetInstanceListByModuleID('{460D7C60-0766-4534-BFD8-5920737B1845}');
-            if (!empty($shcInstances)) {
-                SHC_SetIrrigationActive($shcInstances[0], false);
-            }
+        $this->NotifySmartControllerIrrigation(false);
+    }
+
+    /**
+     * Sicher den SmartController ueber Bewaesserungsstatus informieren.
+     * Faengt Fehler ab wenn die Instanz nicht verfuegbar ist.
+     */
+    protected function NotifySmartControllerIrrigation(bool $active): void {
+        if (!function_exists('SHC_SetIrrigationActive')) return;
+        $shcInstances = IPS_GetInstanceListByModuleID('{460D7C60-0766-4534-BFD8-5920737B1845}');
+        if (empty($shcInstances)) return;
+        try {
+            SHC_SetIrrigationActive($shcInstances[0], $active);
+        } catch (\Throwable $e) {
+            $this->SendDebug('SmartController', 'Nicht erreichbar: ' . $e->getMessage(), 0);
         }
     }
 }

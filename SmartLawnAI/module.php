@@ -204,6 +204,9 @@ class SmartLawnAI extends IPSModuleStrict {
                 $this->AddLogEvent('Sperrzeit deaktiviert', 'Bewässerung wieder freigegeben.', '#4CAF50');
             }
         } else if ($Ident === 'AutomaticActive') {
+            // Immer zuerst alle Zonen-Zustaende zuruecksetzen (egal ob ein/aus)
+            $this->ResetAllZones();
+
             if ($Value) {
                 $hwError = $this->CheckAllHardwareStatus();
                 if ($hwError !== '') {
@@ -214,17 +217,14 @@ class SmartLawnAI extends IPSModuleStrict {
                     return;
                 }
                 $this->SetValue('DeviceAvailable', 1);
+                $this->SetSummaryStatus('Bereit');
+                $this->AddLogEvent("System: Bereit", "Automatik aktiviert. Zeitplaene aktiv.", '#4CAF50');
+            } else {
+                $this->SetSummaryStatus('Automatik deaktiviert');
+                $this->AddLogEvent("System: Deaktiviert", "Automatik ausgeschaltet. Alle Zustaende zurueckgesetzt.", '#FF9800');
             }
             $this->SetValue($Ident, $Value);
             $this->MaintainScheduleEvents($Value);
-            
-            if (!$Value) {
-                $this->SetTimerInterval('LawnAITimer', 0);
-                $this->SetTimerInterval('LawnAITimer', 5000);
-                $this->SetBuffer('LastPlanCalculation', '0');
-                $this->AddLogEvent("System: Bereit", "Automatik aktiviert. Zeitpläne aktiv.", '#4CAF50');
-                $this->ProcessLogic();
-            }
         } else if ($Ident === 'ForceStart') {
             if ($Value) {
                 $this->SetValue($Ident, true);

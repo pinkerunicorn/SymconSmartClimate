@@ -364,4 +364,35 @@ trait SmartLawnAI_Helpers {
     protected function SetZoneCurrentSprinklerIndex($sid, int $val): void {
         $this->SetBuffer('ZoneCurrentSprinklerIndex_' . $sid, (string)$val);
     }
+
+    /**
+     * Setzt alle Zonen-Zustaende komplett zurueck.
+     * Wird aufgerufen beim Umschalten der Automatik (ein/aus).
+     */
+    protected function ResetAllZones(): void {
+        $zonesJson = $this->ReadPropertyString('Zones');
+        $zones = json_decode($zonesJson, true);
+        if (!is_array($zones)) return;
+
+        foreach ($zones as $zone) {
+            $sid = $zone['SensorID'];
+            $this->SetZoneStatus($sid, 'IDLE');
+            $this->SetZoneWateringStart($sid, 0);
+            $this->SetZoneSickerpauseStart($sid, 0);
+            $this->SetZoneCurrentSprinklerIndex($sid, 0);
+            $this->SetZoneDauer($sid, 0);
+            $this->SetBuffer('WaterMeterStart_' . $sid, '');
+        }
+
+        $this->SetValue('WateringActive', false);
+        $this->SetBuffer('LastPlanCalculation', '0');
+
+        // SmartController benachrichtigen
+        if (function_exists('SHC_SetIrrigationActive')) {
+            $shcInstances = IPS_GetInstanceListByModuleID('{460D7C60-0766-4534-BFD8-5920737B1845}');
+            if (!empty($shcInstances)) {
+                SHC_SetIrrigationActive($shcInstances[0], false);
+            }
+        }
+    }
 }

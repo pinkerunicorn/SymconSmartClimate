@@ -44,6 +44,16 @@
             "type": "SelectVariable",
             "name": "IrrigationVariableID",
             "caption": "Bewässerungs-Status"
+        },
+        {
+            "type": "Label",
+            "caption": "Wähle hier die DeviceRegistry-Instanz aus, um den aktuellen Wasserpreis abzurufen."
+        },
+        {
+            "type": "SelectInstance",
+            "name": "RegistryID",
+            "caption": "Device Registry",
+            "validModules": ["{F3B4A7D9-C59E-401A-B826-17D3B5C2849E}"]
         }
     ],
     "actions": [

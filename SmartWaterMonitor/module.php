@@ -120,6 +120,16 @@ class SmartWaterMonitor extends IPSModuleStrict
             'DIGITS'       => 2
         ], 13);
 
+        $wateringOptions = json_encode([
+            ['Value' => false, 'Caption' => 'Nein', 'IconActive' => false, 'Color' => -1],
+            ['Value' => true, 'Caption' => 'Ja (Alarm gesperrt)', 'IconActive' => true, 'IconValue' => 'Drops', 'Color' => 0x0088FF]
+        ]);
+        $this->RegisterVariableBoolean("IrrigationActive", "Bewässerung aktiv", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON' => 'Drops',
+            'OPTIONS' => $wateringOptions
+        ], 14);
+
         // Variables are read-only
 
         // Attributes (internal state)
@@ -146,6 +156,20 @@ class SmartWaterMonitor extends IPSModuleStrict
 
         // Register MQTT Filter
         $this->SetReceiveDataFilter('.*' . preg_quote($topic) . '.*');
+
+        foreach ($this->GetMessageList() as $senderID => $messages) {
+            foreach ($messages as $message) {
+                $this->UnregisterMessage($senderID, $message);
+            }
+        }
+
+        $irriVar = $this->ReadPropertyInteger('IrrigationVariableID');
+        if ($irriVar > 0 && @IPS_VariableExists($irriVar)) {
+            $this->RegisterMessage($irriVar, VM_UPDATE);
+            $this->SetValue('IrrigationActive', GetValue($irriVar));
+        } else {
+            $this->SetValue('IrrigationActive', false);
+        }
         
         // Initialer Lauf der Kostenberechnung
         $this->UpdateCosts();
@@ -162,26 +186,18 @@ class SmartWaterMonitor extends IPSModuleStrict
             }
         }
         
-        // Auto-Detect SmartLawnAI
-        $smartLawnId = "{B6D219C1-F0B8-4FEF-9F59-7A6F5643B9D5}";
-        $lawnInstances = @IPS_GetInstanceListByModuleID($smartLawnId);
-        if (is_array($lawnInstances)) {
-            foreach ($lawnInstances as $inst) {
-                $monitorId = @IPS_GetProperty($inst, 'WaterMonitorInstanceID');
-                if ($monitorId == $this->InstanceID) {
-                    $wateringActiveVar = @IPS_GetObjectIDByIdent('WateringActive', $inst);
-                    if ($wateringActiveVar !== false && @GetValue($wateringActiveVar)) {
-                        $this->SLogInfo('Maximaler Dauerfluss erreicht, aber SmartLawnAI bewässert gerade. Kein Alarm.');
-                        return;
-                    }
-                }
-            }
-        }
-
         // Timer fired -> water running continuously for too long!
         $this->SetTimerInterval('LeakTimer', 0); // Stop timer
         $this->SetValue('LeakAlarm', true);
         $this->SLogError('LECKAGE-ALARM! Wasser fließt ununterbrochen seit ' . $this->ReadPropertyInteger('MaxContinuousFlowMinutes') . ' Minuten!');
+    }
+
+    public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void
+    {
+        $irriVar = $this->ReadPropertyInteger('IrrigationVariableID');
+        if ($SenderID === $irriVar && $Message === VM_UPDATE) {
+            $this->SetValue('IrrigationActive', $Data[0]);
+        }
     }
 
     public function UpdateCosts(): void
@@ -376,41 +392,8 @@ class SmartWaterMonitor extends IPSModuleStrict
         }
     }
 
-    private function getIrrigationOptions(int $regId): array
-    {
-        $options = [['label' => '(Keine / Manuell per Variable)', 'value' => 0]];
-        if ($regId <= 0 || !@IPS_InstanceExists($regId)) return $options;
-        
-        $sockets = @SDR_GetDevicesByType($regId, 'DevicesSocket');
-        if (!is_array($sockets)) $sockets = [];
-        $switches = @SDR_GetDevicesByType($regId, 'DevicesSwitch');
-        if (!is_array($switches)) $switches = [];
-        
-        $devices = array_merge($sockets, $switches);
-        
-        $dynamicOptions = [];
-        foreach ($devices as $dev) {
-            $name = ($dev['room'] ?? '') . ' / ' . ($dev['name'] ?? 'Unbenannt');
-            $varId = (int)($dev['OnOff_VarID'] ?? 0);
-            if ($varId > 0) {
-                // To prevent duplicates if same variable used multiple times
-                $found = false;
-                foreach($dynamicOptions as $o) {
-                    if ($o['value'] === $varId) { $found = true; break; }
-                }
-                if (!$found) {
-                    $dynamicOptions[] = ['label' => $name, 'value' => $varId];
-                }
-            }
-        }
-        usort($dynamicOptions, fn($a, $b) => strcasecmp($a['label'], $b['label']));
-        return array_merge($options, $dynamicOptions);
-    }
-
     public function GetConfigurationForm(): string
     {
-        $regId = $this->ReadPropertyInteger('RegistryID');
-        $irriOptions = $this->getIrrigationOptions($regId);
 
         $registryOptions = [['label' => '(Bitte auswählen)', 'value' => 0]];
         $instances = @IPS_GetInstanceListByModuleID('{F3B4A7D9-C59E-401A-B826-17D3B5C2849E}');
@@ -470,7 +453,12 @@ class SmartWaterMonitor extends IPSModuleStrict
                 ],
                 [
                     'type' => 'Label',
-                    'caption' => 'Wähle hier die Variable aus, die den Bewässerungs-Status anzeigt. So verhindern wir Fehlalarme während du gießt. (Hinweis: Wenn du SmartLawnAI nutzt, wird die Bewässerung vollautomatisch erkannt, du musst hier nichts auswählen!)'
+                    'caption' => 'Wähle hier die Variable aus, die den Bewässerungs-Status anzeigt. So verhindern wir Fehlalarme während du gießt.'
+                ],
+                [
+                    'type' => 'SelectVariable',
+                    'name' => 'IrrigationVariableID',
+                    'caption' => 'Bewässerungs-Status'
                 ]
             ],
             'actions' => [
@@ -480,21 +468,6 @@ class SmartWaterMonitor extends IPSModuleStrict
                 ]
             ]
         ];
-        
-        if (count($irriOptions) > 1) {
-            $form['elements'][] = [
-                'type' => 'Select',
-                'name' => 'IrrigationVariableID',
-                'caption' => 'Bewässerungs-Status',
-                'options' => $irriOptions
-            ];
-        } else {
-            $form['elements'][] = [
-                'type' => 'SelectVariable',
-                'name' => 'IrrigationVariableID',
-                'caption' => 'Bewässerungs-Status'
-            ];
-        }
 
         return json_encode($form);
     }

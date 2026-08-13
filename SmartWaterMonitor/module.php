@@ -224,6 +224,8 @@ class SmartWaterMonitor extends IPSModuleStrict
         $this->SetValue('CostToday', $costToday);
         $this->SetValue('CostMonth', $costMonth);
     }
+
+    public function ReceiveData(string $JSONString): string
     {
         try {
             $data = json_decode($JSONString);

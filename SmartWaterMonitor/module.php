@@ -396,6 +396,14 @@ class SmartWaterMonitor extends IPSModuleStrict
         $regId = $this->ReadPropertyInteger('RegistryID');
         $irriOptions = $this->getIrrigationOptions($regId);
 
+        $registryOptions = [['label' => '(Bitte auswählen)', 'value' => 0]];
+        $instances = @IPS_GetInstanceListByModuleID('{F3B4A7D9-C59E-401A-B826-17D3B5C2849E}');
+        if (is_array($instances)) {
+            foreach ($instances as $instID) {
+                $registryOptions[] = ['label' => IPS_GetName($instID), 'value' => $instID];
+            }
+        }
+
         $form = [
             'status' => [
                 [ 'code' => 104, 'icon' => 'inactive', 'caption' => 'Sensor nicht konfiguriert' ]
@@ -439,10 +447,10 @@ class SmartWaterMonitor extends IPSModuleStrict
                     'caption' => 'Wähle hier die DeviceRegistry-Instanz aus, um den aktuellen Wasserpreis abzurufen.'
                 ],
                 [
-                    'type' => 'SelectInstance',
+                    'type' => 'Select',
                     'name' => 'RegistryID',
                     'caption' => 'Device Registry',
-                    'validModules' => ['{F3B4A7D9-C59E-401A-B826-17D3B5C2849E}']
+                    'options' => $registryOptions
                 ],
                 [
                     'type' => 'Label',

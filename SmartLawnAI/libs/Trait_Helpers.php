@@ -298,71 +298,90 @@ trait SmartLawnAI_Helpers {
         return ($varID !== false && $varID > 0) ? (int)$varID : 0;
     }
 
+    private function GetZoneStateData(string $key): string {
+        $json = $this->ReadAttributeString('ZoneStates');
+        if ($json === '') return '';
+        $data = json_decode($json, true);
+        return $data[$key] ?? '';
+    }
+
+    private function SetZoneStateData(string $key, string $value): void {
+        $json = $this->ReadAttributeString('ZoneStates');
+        $data = $json === '' ? [] : json_decode($json, true);
+        if (!is_array($data)) $data = [];
+        if ($value === '') {
+            unset($data[$key]);
+        } else {
+            $data[$key] = $value;
+        }
+        $this->WriteAttributeString('ZoneStates', json_encode($data));
+    }
+
     protected function GetZoneStatus($sid): string {
-        $v = $this->GetBuffer('ZoneStatus_' . $sid);
+        $v = $this->GetZoneStateData('ZoneStatus_' . $sid);
         return $v !== '' ? $v : 'IDLE';
     }
 
     protected function SetZoneStatus($sid, string $status): void {
-        $this->SetBuffer('ZoneStatus_' . $sid, $status);
+        $this->SetZoneStateData('ZoneStatus_' . $sid, $status);
     }
 
     protected function GetZoneEffizienz($sid): float {
-        $v = $this->GetBuffer('ZoneEffizienz_' . $sid);
+        $v = $this->GetZoneStateData('ZoneEffizienz_' . $sid);
         return $v !== '' ? (float)$v : 1.0;
     }
 
     protected function SetZoneEffizienz($sid, float $eff): void {
-        $this->SetBuffer('ZoneEffizienz_' . $sid, (string)$eff);
+        $this->SetZoneStateData('ZoneEffizienz_' . $sid, (string)$eff);
     }
 
     protected function GetZoneWateringStart($sid): int {
-        return (int)$this->GetBuffer('ZoneWateringStart_' . $sid);
+        return (int)$this->GetZoneStateData('ZoneWateringStart_' . $sid);
     }
 
     protected function SetZoneWateringStart($sid, int $timestamp): void {
-        $this->SetBuffer('ZoneWateringStart_' . $sid, (string)$timestamp);
+        $this->SetZoneStateData('ZoneWateringStart_' . $sid, (string)$timestamp);
     }
 
     protected function GetZoneSickerpauseStart($sid): int {
-        return (int)$this->GetBuffer('ZoneSickerpauseStart_' . $sid);
+        return (int)$this->GetZoneStateData('ZoneSickerpauseStart_' . $sid);
     }
 
     protected function SetZoneSickerpauseStart($sid, int $timestamp): void {
-        $this->SetBuffer('ZoneSickerpauseStart_' . $sid, (string)$timestamp);
+        $this->SetZoneStateData('ZoneSickerpauseStart_' . $sid, (string)$timestamp);
     }
 
     protected function GetZoneSickerpauseMinuten($sid): int {
-        $v = $this->GetBuffer('ZoneSickerpauseMinuten_' . $sid);
-        return $v !== '' ? (int)$v : (int)GetValue($this->GetIDForIdent('SickerpauseMinuten'));
+        $v = $this->GetZoneStateData('ZoneSickerpauseMinuten_' . $sid);
+        return $v !== '' ? (int)$v : 15;
     }
 
     protected function SetZoneSickerpauseMinuten($sid, int $val): void {
-        $this->SetBuffer('ZoneSickerpauseMinuten_' . $sid, (string)$val);
+        $this->SetZoneStateData('ZoneSickerpauseMinuten_' . $sid, (string)$val);
     }
 
     protected function GetZoneStartFeuchte($sid): float {
-        return (float)$this->GetBuffer('ZoneStartFeuchte_' . $sid);
+        return (float)$this->GetZoneStateData('ZoneStartFeuchte_' . $sid);
     }
 
     protected function SetZoneStartFeuchte($sid, float $val): void {
-        $this->SetBuffer('ZoneStartFeuchte_' . $sid, (string)$val);
+        $this->SetZoneStateData('ZoneStartFeuchte_' . $sid, (string)$val);
     }
 
     protected function GetZoneDauer($sid): int {
-        return (int)$this->GetBuffer('ZoneDauer_' . $sid);
+        return (int)$this->GetZoneStateData('ZoneDauer_' . $sid);
     }
 
     protected function SetZoneDauer($sid, int $val): void {
-        $this->SetBuffer('ZoneDauer_' . $sid, (string)$val);
+        $this->SetZoneStateData('ZoneDauer_' . $sid, (string)$val);
     }
 
     protected function GetZoneCurrentSprinklerIndex($sid): int {
-        return (int)$this->GetBuffer('ZoneCurrentSprinklerIndex_' . $sid);
+        return (int)$this->GetZoneStateData('ZoneCurrentSprinklerIndex_' . $sid);
     }
 
     protected function SetZoneCurrentSprinklerIndex($sid, int $val): void {
-        $this->SetBuffer('ZoneCurrentSprinklerIndex_' . $sid, (string)$val);
+        $this->SetZoneStateData('ZoneCurrentSprinklerIndex_' . $sid, (string)$val);
     }
 
     /**

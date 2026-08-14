@@ -180,6 +180,9 @@ class SmartLawnAI extends IPSModuleStrict {
         
         $this->RegisterAttributeString('WaterResetDates', '{}');
         
+        // NEU: Persistenter Status-Speicher für Zonen (überlebt Modul-Updates)
+        $this->RegisterAttributeString('ZoneStates', '{}');
+
         // NEU: Gemini Retry Timer
         $this->RegisterTimer('GeminiRetryTimer', 0, 'SLAI_ProcessGeminiRetry($_IPS[\'TARGET\']);');
         $this->RegisterTimer('ResetForceStart', 0, 'SLAI_ResetForceStart($_IPS[\'TARGET\']);');

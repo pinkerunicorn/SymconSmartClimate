@@ -1043,7 +1043,7 @@ $result = GIO_Query(' . $geminiId . ',
                 $this->SetZoneCurrentSprinklerIndex($sid, 0);
                 $this->SetZoneSickerpauseStart($sid, 0);
                 $this->SetZoneWateringStart($sid, 0);
-                $this->SetBuffer('ZoneSickerpauseMinuten_' . $sid, '');
+                $this->SetZoneSickerpauseMinuten($sid, 0);
                 $this->SetBuffer('WaterMeterStart_' . $sid, '');
 
                 $newStatus = $queueForStart ? 'QUEUED': 'IDLE';

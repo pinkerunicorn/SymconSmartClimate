@@ -510,11 +510,11 @@ trait SmartLawnAI_Logic {
                 case 'HARDWARE_FEHLER':
                     // Recovery: Hardware erneut pruefen
                     if ($this->isZoneHardwareOk($zone, $sprinklers)) {
-                        $this->SetZoneStatus($zone['SensorID'], 'IDLE');
+                        $this->SetZoneStatus($zone['SensorID'], 'QUEUED');
                         $this->SetValue('DeviceAvailable', 1);
                         $zoneName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $zone['SensorID'];
-                        $this->AddLogEvent("{$zoneName}: Hardware OK", "Sprinkler wieder erreichbar", '#4CAF50');
-                        $this->SLogInfo('Hardware Recovery', $zoneName . ' ist wieder OK');
+                        $this->AddLogEvent("{$zoneName}: Hardware OK", "Sprinkler wieder erreichbar - Bewaesserung wird fortgesetzt", '#4CAF50');
+                        $this->SLogInfo('Hardware Recovery', $zoneName . ' ist wieder OK - zurueck in Warteschlange');
                     }
                     break;
             }

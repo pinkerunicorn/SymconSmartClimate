@@ -170,25 +170,36 @@ trait SmartLawnAI_Helpers {
         $this->SetValue('IrrigationLog', $updatedLog);
     }
 
-    protected function SafeRequestAction(int $variableID, $value, string &$errorMsg = ''): bool {
+    protected function SafeRequestAction(int $variableID, $value, string &$errorMsg = '', int $maxRetries = 2): bool {
         if (!IPS_VariableExists($variableID)) {
             $errorMsg = 'Variable ID ' . $variableID . ' existiert nicht';
             return false;
         }
-        try {
-            $result = RequestAction($variableID, $value);
-            if ($result === false) {
+
+        for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $result = RequestAction($variableID, $value);
+                if ($result !== false) {
+                    if ($attempt > 0) {
+                        $this->LogAndDebug('SafeRequestAction', 'Erfolgreich nach ' . ($attempt + 1) . '. Versuch (Ventil-ID: ' . $variableID . ')', 0);
+                    }
+                    $errorMsg = '';
+                    return true;
+                }
                 $errorMsg = 'RequestAction gab false zurueck (Ventil-ID: ' . $variableID . ')';
-                return false;
+            } catch (\Throwable $e) {
+                $errorMsg = $e->getMessage();
             }
-            $errorMsg = '';
-            return true;
-        } catch (\Throwable $e) {
-            $errorMsg = $e->getMessage();
-            $this->LogAndDebug('SafeRequestAction', 'Fehler beim Senden an ID ' . $variableID . ': ' . $errorMsg, 0);
-            $this->SLogError('Sende-Fehler', 'Ventil-ID ' . $variableID . ': ' . $errorMsg);
-            return false;
+
+            if ($attempt < $maxRetries) {
+                $this->LogAndDebug('SafeRequestAction', 'Versuch ' . ($attempt + 1) . ' fehlgeschlagen (ID: ' . $variableID . '): ' . $errorMsg . ' - Retry in 3s...', 0);
+                IPS_Sleep(3000);
+            }
         }
+
+        $this->LogAndDebug('SafeRequestAction', 'Endgueltig fehlgeschlagen nach ' . ($maxRetries + 1) . ' Versuchen (ID: ' . $variableID . '): ' . $errorMsg, 0);
+        $this->SLogError('Sende-Fehler', 'Ventil-ID ' . $variableID . ': ' . $errorMsg . ' (nach ' . ($maxRetries + 1) . ' Versuchen)');
+        return false;
     }
 
     public function ResolveSprinklerObject(int $objectId): array {

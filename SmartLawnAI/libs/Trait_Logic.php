@@ -100,8 +100,7 @@ trait SmartLawnAI_Logic {
 
         // Zustände, die ein physisch aktives Ventil signalisieren (blockiert andere Zonen)
         $blockierendeStatus = ['WATERING', 'WAITING_FOR_OPEN', 'WAITING_FOR_RESULT'];
-        // Für die Anzeige: QUEUED zählt auch als "aktiv" (Bewässerung läuft)
-        $displayAktivStatus = ['WATERING', 'WAITING_FOR_OPEN', 'WAITING_FOR_RESULT', 'QUEUED'];
+        $displayAktivStatus = ['WATERING', 'WAITING_FOR_OPEN'];
         $einVentilIstAktiv = false;
         $anyQueued = false;
         foreach ($zones as $zone) {

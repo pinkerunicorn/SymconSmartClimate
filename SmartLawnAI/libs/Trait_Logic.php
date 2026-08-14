@@ -934,7 +934,7 @@ $result = GIO_Query(' . $geminiId . ',
             if (isset($planByZone[$sid])) {
                 $zonePlan = $planByZone[$sid];
                 $duration = isset($zonePlan['durationMinutes']) ? (int)$zonePlan['durationMinutes'] : 0;
-                $sicker = isset($zonePlan['sickerpauseMinuten']) ? (int)$zonePlan['sickerpauseMinuten'] : GetValue($this->GetIDForIdent('SickerpauseMinuten'));
+                $sicker = isset($zonePlan['sickerpauseMinuten']) ? (int)$zonePlan['sickerpauseMinuten'] : 15;
                 
                 if ($duration <= 0) {
                     // This will be handled in the $duration > 0 check below, so don't continue here

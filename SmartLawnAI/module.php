@@ -37,14 +37,7 @@ class SmartLawnAI extends IPSModuleStrict {
             'MAX' => 100,
             'STEP' => 5
         ], 201);
-        $this->RegisterVariableInteger("SickerpauseMinuten", "Sickerpause", [
-            'PRESENTATION' => VARIABLE_PRESENTATION_SLIDER,
-            'ICON' => 'Clock',
-            'SUFFIX' => 'Min',
-            'MIN' => 0,
-            'MAX' => 180,
-            'STEP' => 5
-        ], 202);
+
         $this->RegisterVariableInteger("GlobalMaxDuration", "Maximale Bewässerungsdauer", [
             'PRESENTATION' => VARIABLE_PRESENTATION_SLIDER,
             'ICON' => 'Clock',
@@ -194,7 +187,7 @@ class SmartLawnAI extends IPSModuleStrict {
     }
 
     public function RequestAction(string $Ident, mixed $Value): void {
-        if (in_array($Ident, ['DefaultZielFeuchte', 'DefaultStartSchwellwert', 'SickerpauseMinuten', 'GlobalMaxDuration'])) {
+        if (in_array($Ident, ['DefaultZielFeuchte', 'DefaultStartSchwellwert', 'GlobalMaxDuration'])) {
             $this->SetValue($Ident, $Value);
         } else if ($Ident === 'SperrzeitActive') {
             $this->SetValue($Ident, $Value);
@@ -318,9 +311,9 @@ class SmartLawnAI extends IPSModuleStrict {
         if (GetValue($this->GetIDForIdent('DefaultStartSchwellwert')) == 0) { $this->SetValue('DefaultStartSchwellwert', 20.0); }
          
         
-        $this->EnableAction('SickerpauseMinuten');
-        IPS_SetName($this->GetIDForIdent('SickerpauseMinuten'), 'Sickerpause');
-        if (GetValue($this->GetIDForIdent('SickerpauseMinuten')) == 0) { $this->SetValue('SickerpauseMinuten', 15); }
+        
+        // Remove legacy Sickerpause variable, AI handles it dynamically now
+        $this->UnregisterVariable('SickerpauseMinuten');
          
         
         $this->EnableAction('GlobalMaxDuration');

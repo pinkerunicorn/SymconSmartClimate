@@ -917,10 +917,6 @@ $result = GIO_Query(' . $geminiId . ',
         
         $this->SetValue('LastGeminiResponse', trim($reasoningText));
 
-        if ($maxSicker > 0) {
-            $this->SetValue('SickerpauseMinuten', $maxSicker);
-        }
-
         // Apply Gemini calculations
         $planByZone = [];
         foreach ($planData['irrigationPlan'] as $item) {

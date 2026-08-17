@@ -250,26 +250,26 @@ class SmartClimateZone extends IPSModuleStrict
     private function MaintainCoreVariables(): void {
         $this->RegisterVariableBoolean("VentilationRecommendation", "Lüften empfohlen!", [
             'PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'          => 'Wind',
+            'ICON'          => 'wind',
             'COLOR'         => -1,
             'CONTENT_COLOR' => -1,
             'DISPLAY_TYPE'  => 0,
             'PREVIEW_STYLE' => 1,
             'SHOW_PREVIEW'  => true,
             'OPTIONS'       => json_encode([
-                ['Value' => false, 'Caption' => 'Nein', 'IconValue' => 'Wind', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
-                ['Value' => true, 'Caption' => 'Lüften empfohlen', 'IconValue' => 'Wind', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF]
+                ['Value' => false, 'Caption' => 'Nein', 'IconValue' => 'wind', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
+                ['Value' => true, 'Caption' => 'Lüften empfohlen', 'IconValue' => 'wind', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF]
             ])
         ], 100);
         $this->RegisterVariableString("VentilationDetails", "Hinweis", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Wind'
+            'ICON'         => 'wind'
         ], 101);
-        $this->RegisterVariableFloat("DewPointInside", "Taupunkt Innen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' °C','DECIMALPLACES' => 1], 1);
-        $this->RegisterVariableFloat("DewPointOutside", "Taupunkt Außen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' °C','DECIMALPLACES' => 1], 2);
-        $this->RegisterVariableFloat("AbsHumInside", "Absolute Feuchte Innen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' g/m³','DECIMALPLACES' => 2], 3);
-        $this->RegisterVariableFloat("AbsHumOutside", "Absolute Feuchte Außen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' g/m³','DECIMALPLACES' => 2], 4);
-        $this->RegisterVariableFloat("CurrentHumidity", "Aktuelle Luftfeuchtigkeit", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'Drops','SUFFIX'=> ' %','DECIMALPLACES' => 1], 5);
+        $this->RegisterVariableFloat("DewPointInside", "Taupunkt Innen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'droplet','SUFFIX'=> ' °C','DECIMALPLACES' => 1], 1);
+        $this->RegisterVariableFloat("DewPointOutside", "Taupunkt Außen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'droplet','SUFFIX'=> ' °C','DECIMALPLACES' => 1], 2);
+        $this->RegisterVariableFloat("AbsHumInside", "Absolute Feuchte Innen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'droplet','SUFFIX'=> ' g/m³','DECIMALPLACES' => 2], 3);
+        $this->RegisterVariableFloat("AbsHumOutside", "Absolute Feuchte Außen", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'droplet','SUFFIX'=> ' g/m³','DECIMALPLACES' => 2], 4);
+        $this->RegisterVariableFloat("CurrentHumidity", "Aktuelle Luftfeuchtigkeit", ['PRESENTATION'  => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'ICON'=> 'droplet','SUFFIX'=> ' %','DECIMALPLACES' => 1], 5);
         
         $moldIntervals = [
             [
@@ -279,7 +279,7 @@ class SmartClimateZone extends IPSModuleStrict
                 'PrefixActive' => false, 'PrefixValue' => '',
                 'SuffixActive' => true, 'SuffixValue' => ' %',
                 'DigitsActive' => false, 'DigitsValue' => 0,
-                'IconActive' => true, 'IconValue' => 'Ok',
+                'IconActive' => true, 'IconValue' => 'circle-check',
                 'ColorActive' => true, 'ColorValue' => 0x00CC00,
                 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF
             ],
@@ -290,7 +290,7 @@ class SmartClimateZone extends IPSModuleStrict
                 'PrefixActive' => false, 'PrefixValue' => '',
                 'SuffixActive' => true, 'SuffixValue' => ' %',
                 'DigitsActive' => false, 'DigitsValue' => 0,
-                'IconActive' => true, 'IconValue' => 'Warning',
+                'IconActive' => true, 'IconValue' => 'triangle-exclamation',
                 'ColorActive' => true, 'ColorValue' => 0xFFAA00,
                 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF
             ],
@@ -301,7 +301,7 @@ class SmartClimateZone extends IPSModuleStrict
                 'PrefixActive' => false, 'PrefixValue' => '',
                 'SuffixActive' => true, 'SuffixValue' => ' %',
                 'DigitsActive' => false, 'DigitsValue' => 0,
-                'IconActive' => true, 'IconValue' => 'Alert',
+                'IconActive' => true, 'IconValue' => 'bell',
                 'ColorActive' => true, 'ColorValue' => 0xFF0000,
                 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF
             ]
@@ -309,7 +309,7 @@ class SmartClimateZone extends IPSModuleStrict
         
         $this->RegisterVariableInteger("MoldRiskIndex", "Schimmelrisiko", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Information',
+            'ICON' => 'virus',
             'INTERVALS_ACTIVE' => true,
             'INTERVALS' => json_encode($moldIntervals)
         ], 6);
@@ -320,20 +320,20 @@ class SmartClimateZone extends IPSModuleStrict
 
     private function MaintainFrostVariables(bool $active): void {
         if ($active) {
-            $this->RegisterVariableBoolean("WinterMode", "Winterbetrieb", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH, 'ICON' => 'Gear'], 200);
+            $this->RegisterVariableBoolean("WinterMode", "Winterbetrieb", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH, 'ICON' => 'gear'], 200);
             $this->EnableAction("WinterMode");
             
             $targetOptions = [];
-            for ($i = 2; $i <= 15; $i++) $targetOptions[] = ['Value' => $i, 'Caption' => $i . ' °C', 'IconActive' => true, 'IconValue' => 'Temperature', 'Color' => 0xFFFFFF];
+            for ($i = 2; $i <= 15; $i++) $targetOptions[] = ['Value' => $i, 'Caption' => $i . ' °C', 'IconActive' => true, 'IconValue' => 'temperature-half', 'Color' => 0xFFFFFF];
             $this->RegisterVariableInteger("TargetFrostTemperature", "Zieltemperatur Frostschutz", ['PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION, 'OPTIONS' => json_encode($targetOptions)], 201);
             $this->EnableAction("TargetFrostTemperature");
             
             $heaterIntervals = json_encode([
                 ['IntervalMinValue' => 0, 'IntervalMaxValue' => 0, 'ConstantActive' => true, 'ConstantValue' => 'Aus', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Sleep', 'ColorActive' => false, 'ColorValue' => -1, 'ContentColorActive' => false, 'ContentColorValue' => -1],
-                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Heizt', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Flame', 'ColorActive' => true, 'ColorValue' => 0xFF6600, 'ContentColorActive' => false, 'ContentColorValue' => -1],
-                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Fehler', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Alert', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorValue' => -1]
+                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Heizt', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'fire', 'ColorActive' => true, 'ColorValue' => 0xFF6600, 'ContentColorActive' => false, 'ContentColorValue' => -1],
+                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Fehler', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'triangle-exclamation', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => false, 'ContentColorValue' => -1]
             ]);
-            $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Information', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => $heaterIntervals], 15);
+            $this->RegisterVariableInteger("HeaterStatus", "Status Heizung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'info', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => $heaterIntervals], 15);
             $this->RegisterVariableBoolean("AlarmHeaterDefect", "Alarm: Heizung defekt", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH], 202);
             $this->EnableAction("AlarmHeaterDefect");
             $this->RegisterVariableBoolean("AlarmFrost", "Alarm: Kritischer Frost", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH], 204);
@@ -352,7 +352,7 @@ class SmartClimateZone extends IPSModuleStrict
 
     private function MaintainDehumidifierVariables(bool $active): void {
         if ($active) {
-            $sliderPresentation = ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'ICON' => 'Drops', 'SUFFIX' => ' %', 'MIN' => 30, 'MAX' => 90, 'STEP' => 1, 'DECIMALPLACES' => 1];
+            $sliderPresentation = ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'ICON' => 'droplet', 'SUFFIX' => ' %', 'MIN' => 30, 'MAX' => 90, 'STEP' => 1, 'DECIMALPLACES' => 1];
             $this->RegisterVariableFloat("DehumidifierMaxHum", "Einschaltschwelle (Max %)", $sliderPresentation, 210);
             $this->EnableAction("DehumidifierMaxHum");
             $this->RegisterVariableFloat("DehumidifierMinHum", "Ausschaltschwelle (Min %)", $sliderPresentation, 211);
@@ -360,11 +360,11 @@ class SmartClimateZone extends IPSModuleStrict
             
             $dehum = [
                 ['IntervalMinValue' => 0, 'IntervalMaxValue' => 0, 'ConstantActive' => true, 'ConstantValue' => 'Aus', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Sleep', 'ColorActive' => false, 'ColorValue' => -1, 'ContentColorActive' => false, 'ContentColorValue' => -1],
-                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Aktiv', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Drops', 'ColorActive' => true, 'ColorValue' => 0x0088FF, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
-                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Fenster offen', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Window', 'ColorActive' => true, 'ColorValue' => 0xFFCC00, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
-                ['IntervalMinValue' => 3, 'IntervalMaxValue' => 3, 'ConstantActive' => true, 'ConstantValue' => 'Tank voll!', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Warning', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF]
+                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Aktiv', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'droplet', 'ColorActive' => true, 'ColorValue' => 0x0088FF, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Fenster offen', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'window-maximize', 'ColorActive' => true, 'ColorValue' => 0xFFCC00, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 3, 'IntervalMaxValue' => 3, 'ConstantActive' => true, 'ConstantValue' => 'Tank voll!', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'triangle-exclamation', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF]
             ];
-            $this->RegisterVariableInteger("DehumidifierStatus", "Status Entfeuchter", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Drops', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($dehum)], 13);
+            $this->RegisterVariableInteger("DehumidifierStatus", "Status Entfeuchter", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'droplet', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($dehum)], 13);
             $this->RegisterVariableBoolean("AlarmTankFull", "Alarm: Wassertank voll", ['PRESENTATION' => VARIABLE_PRESENTATION_SWITCH], 212);
             $this->EnableAction("AlarmTankFull");
             
@@ -380,30 +380,30 @@ class SmartClimateZone extends IPSModuleStrict
 
     private function MaintainAirQualityVariables(bool $active): void {
         if ($active) {
-            $this->RegisterVariableFloat("RadonShortTerm", "Radon Kurzzeit", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Gauge', 'SUFFIX' => ' Bq/m³', 'DECIMALPLACES' => 0], 6);
-            $this->RegisterVariableFloat("RadonLongTerm", "Radon Langzeit", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Gauge', 'SUFFIX' => ' Bq/m³', 'DECIMALPLACES' => 0], 7);
+            $this->RegisterVariableFloat("RadonShortTerm", "Radon Kurzzeit", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'radiation', 'SUFFIX' => ' Bq/m³', 'DECIMALPLACES' => 0], 6);
+            $this->RegisterVariableFloat("RadonLongTerm", "Radon Langzeit", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'radiation', 'SUFFIX' => ' Bq/m³', 'DECIMALPLACES' => 0], 7);
             
             $radon = [
-                ['IntervalMinValue' => 0, 'IntervalMaxValue' => 0, 'ConstantActive' => true, 'ConstantValue' => 'Gut', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Ok', 'ColorActive' => true, 'ColorValue' => 0x00CC00, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
-                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Mittel', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Warning', 'ColorActive' => true, 'ColorValue' => 0xFFA500, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
-                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Hoch', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Alert', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
-                ['IntervalMinValue' => 3, 'IntervalMaxValue' => 3, 'ConstantActive' => true, 'ConstantValue' => 'Sehr hoch', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Alert', 'ColorActive' => true, 'ColorValue' => 0xCC0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF]
+                ['IntervalMinValue' => 0, 'IntervalMaxValue' => 0, 'ConstantActive' => true, 'ConstantValue' => 'Gut', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'circle-check', 'ColorActive' => true, 'ColorValue' => 0x00CC00, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Mittel', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'triangle-exclamation', 'ColorActive' => true, 'ColorValue' => 0xFFA500, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Hoch', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'bell', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 3, 'IntervalMaxValue' => 3, 'ConstantActive' => true, 'ConstantValue' => 'Sehr hoch', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'bell', 'ColorActive' => true, 'ColorValue' => 0xCC0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF]
             ];
-            $this->RegisterVariableInteger("RadonStatus", "Radon Status", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Gauge', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($radon)], 8);
-            $this->RegisterVariableString("RadonRecommendation", "Radon Empfehlung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Gauge'], 102);
+            $this->RegisterVariableInteger("RadonStatus", "Radon Status", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'radiation', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($radon)], 8);
+            $this->RegisterVariableString("RadonRecommendation", "Radon Empfehlung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'radiation'], 102);
             
-            $this->RegisterVariableFloat("CO2Value", "CO₂-Konzentration", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate', 'SUFFIX' => ' ppm', 'DECIMALPLACES' => 0], 9);
+            $this->RegisterVariableFloat("CO2Value", "CO₂-Konzentration", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'smog', 'SUFFIX' => ' ppm', 'DECIMALPLACES' => 0], 9);
             $co2 = [
-                ['IntervalMinValue' => 0, 'IntervalMaxValue' => 0, 'ConstantActive' => true, 'ConstantValue' => 'Gut', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Ok', 'ColorActive' => true, 'ColorValue' => 0x00CC00, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
-                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Mittel', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Warning', 'ColorActive' => true, 'ColorValue' => 0xFFA500, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
-                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Hoch', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'Alert', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF]
+                ['IntervalMinValue' => 0, 'IntervalMaxValue' => 0, 'ConstantActive' => true, 'ConstantValue' => 'Gut', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'circle-check', 'ColorActive' => true, 'ColorValue' => 0x00CC00, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 1, 'IntervalMaxValue' => 1, 'ConstantActive' => true, 'ConstantValue' => 'Mittel', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'triangle-exclamation', 'ColorActive' => true, 'ColorValue' => 0xFFA500, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF],
+                ['IntervalMinValue' => 2, 'IntervalMaxValue' => 2, 'ConstantActive' => true, 'ConstantValue' => 'Hoch', 'ConversionFactor' => 1, 'PrefixActive' => false, 'PrefixValue' => '', 'SuffixActive' => false, 'SuffixValue' => '', 'DigitsActive' => false, 'DigitsValue' => 0, 'IconActive' => true, 'IconValue' => 'bell', 'ColorActive' => true, 'ColorValue' => 0xFF0000, 'ContentColorActive' => true, 'ContentColorValue' => 0xFFFFFF]
             ];
-            $this->RegisterVariableInteger("CO2Status", "CO₂ Status", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($co2)], 10);
-            $this->RegisterVariableString("CO2Recommendation", "CO₂ Empfehlung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate'], 103);
+            $this->RegisterVariableInteger("CO2Status", "CO₂ Status", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'smog', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($co2)], 10);
+            $this->RegisterVariableString("CO2Recommendation", "CO₂ Empfehlung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'smog'], 103);
             
-            $this->RegisterVariableFloat("VOCValue", "VOC-Konzentration", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate', 'SUFFIX' => ' µg/m³', 'DECIMALPLACES' => 0], 11);
-            $this->RegisterVariableInteger("VOCStatus", "VOC Status", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($co2)], 12);
-            $this->RegisterVariableString("VOCRecommendation", "VOC Empfehlung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'Climate'], 104);
+            $this->RegisterVariableFloat("VOCValue", "VOC-Konzentration", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'wind', 'SUFFIX' => ' µg/m³', 'DECIMALPLACES' => 0], 11);
+            $this->RegisterVariableInteger("VOCStatus", "VOC Status", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'smog', 'INTERVALS_ACTIVE' => true, 'INTERVALS' => json_encode($co2)], 12);
+            $this->RegisterVariableString("VOCRecommendation", "VOC Empfehlung", ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'wind'], 104);
             
             IPS_SetVariableCustomProfile($this->GetIDForIdent('RadonStatus'), '');
             IPS_SetVariableCustomProfile($this->GetIDForIdent('CO2Status'), '');

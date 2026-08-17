@@ -31,18 +31,18 @@ class FireplaceSafety extends IPSModuleStrict
         // --- Status-Variablen ---
         $this->RegisterVariableFloat("CurrentDeltaTemp", "Aktuelle Temperatur-Differenz", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Temperature',
+            'ICON' => 'temperature-arrow-up',
             'SUFFIX' => ' °C',
             'DECIMALPLACES' => 1
         ], 1);
         
         $doorOptions = json_encode([
-            ['Value' => false, 'Caption' => 'Geschlossen', 'IconValue' => 'Window', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
-            ['Value' => true, 'Caption' => 'Offen', 'IconValue' => 'Window', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFFA500, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFA500]
+            ['Value' => false, 'Caption' => 'Geschlossen', 'IconValue' => 'window-maximize', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
+            ['Value' => true, 'Caption' => 'Offen', 'IconValue' => 'window-maximize', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFFA500, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFFA500]
         ]);
         $this->RegisterVariableBoolean("CurrentDoorStatus", "Status Ofentür", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Window',
+            'ICON' => 'window-maximize',
             'COLOR' => -1,
             'CONTENT_COLOR' => -1,
             'DISPLAY_TYPE' => 0,
@@ -52,12 +52,12 @@ class FireplaceSafety extends IPSModuleStrict
         ], 2);
         
         $ovenOptions = json_encode([
-            ['Value' => false, 'Caption' => 'Aus', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
-            ['Value' => true, 'Caption' => 'An', 'IconValue' => 'Flame', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF6600, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF6600]
+            ['Value' => false, 'Caption' => 'Aus', 'IconValue' => 'fire', 'IconActive' => true, 'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
+            ['Value' => true, 'Caption' => 'An', 'IconValue' => 'fire', 'IconActive' => true, 'ColorActive' => true, 'ColorDisplay' => 0xFF6600, 'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF6600]
         ]);
         $this->RegisterVariableBoolean("OvenStatus", "Status Kaminofen", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Flame',
+            'ICON'         => 'fire-flame-curved',
             'COLOR' => -1,
             'CONTENT_COLOR' => -1,
             'DISPLAY_TYPE' => 0,
@@ -72,7 +72,7 @@ class FireplaceSafety extends IPSModuleStrict
         ]);
         $this->RegisterVariableBoolean("HoodStatus", "Status Dunstabzugshaube", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Information',
+            'ICON'         => 'info',
             'COLOR' => -1,
             'CONTENT_COLOR' => -1,
             'DISPLAY_TYPE' => 0,
@@ -83,14 +83,14 @@ class FireplaceSafety extends IPSModuleStrict
         
         $this->RegisterVariableBoolean("AlarmOvenDoor", "Alarm Ofentür", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Warning',
+            'ICON'         => 'triangle-exclamation',
             'OPTIONS'      => $this->BuildAlarmOptions('ALARM: Ofentür offen!', 'OK'),
         ], 200);
         $this->EnableAction("AlarmOvenDoor"); // Quittierbar per Webfront
 
         $this->RegisterVariableFloat("OvenPeakTemp", "Letzte Spitzen-Temperatur", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Temperature',
+            'ICON' => 'temperature-high',
             'SUFFIX' => ' °C'
         ], 5);
         
@@ -113,7 +113,7 @@ class FireplaceSafety extends IPSModuleStrict
                 'PrefixActive' => false, 'PrefixValue' => '',
                 'SuffixActive' => false, 'SuffixValue' => '',
                 'DigitsActive' => false, 'DigitsValue' => 0,
-                'IconActive' => true, 'IconValue' => 'Flame',
+                'IconActive' => true, 'IconValue' => 'fire',
                 'ColorActive' => true, 'ColorValue' => 0x00CC00,
                 'ContentColorActive' => false, 'ContentColorValue' => -1
             ],
@@ -124,7 +124,7 @@ class FireplaceSafety extends IPSModuleStrict
                 'PrefixActive' => false, 'PrefixValue' => '',
                 'SuffixActive' => false, 'SuffixValue' => '',
                 'DigitsActive' => false, 'DigitsValue' => 0,
-                'IconActive' => true, 'IconValue' => 'Flame',
+                'IconActive' => true, 'IconValue' => 'fire',
                 'ColorActive' => true, 'ColorValue' => 0xFFA500,
                 'ContentColorActive' => false, 'ContentColorValue' => -1
             ]
@@ -137,13 +137,13 @@ class FireplaceSafety extends IPSModuleStrict
 
         $this->RegisterVariableInteger("WoodRefillNeeded", "Bitte Holz nachlegen", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Flame',
+            'ICON' => 'fire',
             'INTERVALS_ACTIVE' => true,
             'INTERVALS' => $woodIntervals
         ], 100);
         $this->RegisterVariableInteger("FiredCount", "Anzahl Angefeuert", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Flame'
+            'ICON' => 'fire'
         ], 101);
 
         // --- Timers ---

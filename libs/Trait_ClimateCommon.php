@@ -161,7 +161,7 @@ trait ClimateCommon_Trait
      * Verwendung:
      *   $this->RegisterVariableBoolean('Alarm', 'Alarm', [
      *       'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-     *       'ICON'         => 'Warning',
+     *       'ICON'         => 'triangle-exclamation',
      *       'OPTIONS'      => $this->BuildAlarmOptions('Alarm!', 'OK'),
      *   ], 10);
      *
@@ -179,7 +179,7 @@ trait ClimateCommon_Trait
             [
                 'Value'               => false,
                 'Caption'             => $okCaption,
-                'IconValue'           => 'Ok',
+                'IconValue'           => 'circle-check',
                 'IconActive'          => true,
                 'ColorActive'         => true,
                 'ColorDisplay'        => 0x00CC00,
@@ -191,7 +191,7 @@ trait ClimateCommon_Trait
             [
                 'Value'               => true,
                 'Caption'             => $alarmCaption,
-                'IconValue'           => 'Warning',
+                'IconValue'           => 'triangle-exclamation',
                 'IconActive'          => true,
                 'ColorActive'         => true,
                 'ColorDisplay'        => $alarmColor,

@@ -23,16 +23,16 @@ class SmartWaterMonitor extends IPSModuleStrict
 
         // Variables
         $onlineOptions = json_encode([
-            ['Value' => false, 'Caption' => 'Offline', 'IconValue' => 'Network', 'IconActive' => true,
+            ['Value' => false, 'Caption' => 'Offline', 'IconValue' => 'network-wired', 'IconActive' => true,
              'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false,
              'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000],
-            ['Value' => true, 'Caption' => 'Online', 'IconValue' => 'Network', 'IconActive' => true,
+            ['Value' => true, 'Caption' => 'Online', 'IconValue' => 'network-wired', 'IconActive' => true,
              'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false,
              'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00]
         ]);
         $this->RegisterVariableBoolean("Online", "Gerätestatus", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Network',
+            'ICON' => 'network-wired',
             'COLOR' => -1,
             'CONTENT_COLOR' => -1,
             'DISPLAY_TYPE' => 0,
@@ -42,16 +42,16 @@ class SmartWaterMonitor extends IPSModuleStrict
         ], 900);
         
         $leakOptions = json_encode([
-            ['Value' => false, 'Caption' => 'OK', 'IconValue' => 'Drops', 'IconActive' => true,
+            ['Value' => false, 'Caption' => 'OK', 'IconValue' => 'droplet', 'IconActive' => true,
              'ColorActive' => true, 'ColorDisplay' => 0x00CC00, 'ContentColorActive' => false,
              'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x00CC00],
-            ['Value' => true, 'Caption' => 'Leck erkannt!', 'IconValue' => 'Drops', 'IconActive' => true,
+            ['Value' => true, 'Caption' => 'Leck erkannt!', 'IconValue' => 'droplet', 'IconActive' => true,
              'ColorActive' => true, 'ColorDisplay' => 0xFF0000, 'ContentColorActive' => false,
              'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0xFF0000]
         ]);
         $this->RegisterVariableBoolean("LeakAlarm", "Leckage-Alarm", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Drops',
+            'ICON' => 'droplet',
             'COLOR' => -1,
             'CONTENT_COLOR' => -1,
             'DISPLAY_TYPE' => 0,
@@ -61,16 +61,16 @@ class SmartWaterMonitor extends IPSModuleStrict
         ], 101);
         
         $runningOptions = json_encode([
-            ['Value' => false, 'Caption' => 'Kein Fluss', 'IconValue' => 'Drops', 'IconActive' => false,
+            ['Value' => false, 'Caption' => 'Kein Fluss', 'IconValue' => 'droplet', 'IconActive' => false,
              'ColorActive' => false, 'ColorDisplay' => -1, 'ContentColorActive' => false,
              'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => -1],
-            ['Value' => true, 'Caption' => 'Laeuft', 'IconValue' => 'Drops', 'IconActive' => true,
+            ['Value' => true, 'Caption' => 'Laeuft', 'IconValue' => 'droplet', 'IconActive' => true,
              'ColorActive' => true, 'ColorDisplay' => 0x0088FF, 'ContentColorActive' => false,
              'ContentColorDisplay' => -1, 'ContentColorValue' => -1, 'ColorValue' => 0x0088FF]
         ]);
         $this->RegisterVariableBoolean("WaterRunning", "Wasser fließt", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Drops',
+            'ICON' => 'faucet-drip',
             'COLOR' => -1,
             'CONTENT_COLOR' => -1,
             'DISPLAY_TYPE' => 0,
@@ -81,52 +81,52 @@ class SmartWaterMonitor extends IPSModuleStrict
         $this->RegisterVariableFloat("FlowRate", "Aktueller Durchfluss", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX'       => ' l/min',
-            'ICON'         => 'Speedo'
+            'ICON'         => 'gauge-high'
         ], 2);
         $this->RegisterVariableFloat("TotalConsumption", "Gesamtverbrauch", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX'       => ' m³',
-            'ICON'         => 'Drops'
+            'ICON'         => 'faucet-drip'
         ], 3);
         $this->RegisterVariableFloat("TotalConsumptionLiter", "Gesamtverbrauch (Liter)", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX'       => ' l',
-            'ICON'         => 'Drops'
+            'ICON'         => 'faucet-drip'
         ], 4);
 
         $this->RegisterVariableFloat("ConsumptionToday", "Verbrauch Heute", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX'       => ' m³',
-            'ICON'         => 'Drops',
+            'ICON'         => 'faucet-drip',
             'DIGITS'       => 3
         ], 10);
         $this->RegisterVariableFloat("CostToday", "Kosten Heute", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX'       => ' €',
-            'ICON'         => 'Euro',
+            'ICON'         => 'euro-sign',
             'DIGITS'       => 2
         ], 11);
         
         $this->RegisterVariableFloat("ConsumptionMonth", "Verbrauch dieser Monat", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX'       => ' m³',
-            'ICON'         => 'Drops',
+            'ICON'         => 'faucet-drip',
             'DIGITS'       => 3
         ], 12);
         $this->RegisterVariableFloat("CostMonth", "Kosten dieser Monat", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX'       => ' €',
-            'ICON'         => 'Euro',
+            'ICON'         => 'euro-sign',
             'DIGITS'       => 2
         ], 13);
 
         $wateringOptions = json_encode([
             ['Value' => false, 'Caption' => 'Nein', 'IconActive' => false, 'Color' => -1],
-            ['Value' => true, 'Caption' => 'Ja (Alarm gesperrt)', 'IconActive' => true, 'IconValue' => 'Drops', 'Color' => 0x0088FF]
+            ['Value' => true, 'Caption' => 'Ja (Alarm gesperrt)', 'IconActive' => true, 'IconValue' => 'droplet', 'Color' => 0x0088FF]
         ]);
         $this->RegisterVariableBoolean("IrrigationActive", "Bewässerung aktiv", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON' => 'Drops',
+            'ICON' => 'sprinkler',
             'OPTIONS' => $wateringOptions
         ], 14);
 

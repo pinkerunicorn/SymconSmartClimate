@@ -798,6 +798,11 @@ trait SmartLawnAI_Logic {
         $userPrompt .= "- Nutze Helligkeit und Luftfeuchte, um die aktuelle Verdunstungsrate abzuschätzen.\n";
         $userPrompt .= "- Berechne für JEDE 'zoneId'die exakte Laufzeit in Minuten (0 bis maxDurationMinutes).\n";
         
+        $isFertilizerMode = GetValue($this->GetIDForIdent('FertilizerMode'));
+        if ($isFertilizerMode) {
+            $userPrompt .= "- WICHTIG: Der Düngemodus ist aktiv! Der Rasen wurde frisch gedüngt. Berechne die Bewässerung so, dass der Dünger optimal aufgelöst, aber nicht tief in den Boden ausgewaschen wird. Passe die Laufzeiten und Sickerpausen entsprechend deiner agrarwissenschaftlichen Expertise an. Entscheide zusätzlich, ob der Dünger nach diesem Bewässerungszyklus ausreichend eingeregnet sein wird (Feld: fertilizerModeFinished).\n";
+        }
+
         $systemInstruction = "Du bist ein präzises Steuerungsmodul für Agrarsysteme. Deine Aufgabe ist es, für die übergebenen Zonen-IDs (zoneId) Laufzeiten in Minuten zu berechnen. Antworte ausschließlich im vorgegebenen JSON-Format.";
 
         // 3. API-Aufruf (Gemini mit striktem JSON Schema)
@@ -834,6 +839,10 @@ trait SmartLawnAI_Logic {
                 'recommendedMaxDurationMinutes'=> [
                     'type'=> 'INTEGER',
                     'description'=> 'Die generelle agronomische Empfehlung für die absolut maximale Bewässerungsdauer in Minuten (ohne das Limit des Nutzers zu berücksichtigen).'
+                ],
+                'fertilizerModeFinished'=> [
+                    'type'=> 'BOOLEAN',
+                    'description'=> 'Wird nur beachtet wenn Düngemodus aktiv ist: Auf true setzen, wenn der Dünger nach dieser Bewässerung ausreichend eingeregnet ist und der Modus beendet werden kann.'
                 ]
             ],
             'required'=> ['irrigationPlan', 'recommendedMaxDurationMinutes']
@@ -916,6 +925,16 @@ $result = GIO_Query(' . $geminiId . ',
         }
         
         $this->SetValue('LastGeminiResponse', trim($reasoningText));
+
+        // Duengemodus Beendigung verarbeiten
+        if (isset($planData['fertilizerModeFinished']) && $planData['fertilizerModeFinished'] === true) {
+            $isFertilizerMode = GetValue($this->GetIDForIdent('FertilizerMode'));
+            if ($isFertilizerMode) {
+                $this->SetValue('FertilizerMode', false);
+                $this->AddLogEvent('Düngemodus beendet', 'KI hat entschieden, dass der Dünger ausreichend eingeregnet ist.', '#4CAF50');
+                $this->SLogInfo('Planer', 'Düngemodus wurde durch KI automatisch beendet.');
+            }
+        }
 
         // Apply Gemini calculations
         $planByZone = [];

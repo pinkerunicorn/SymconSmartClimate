@@ -108,6 +108,12 @@ class SmartLawnAI extends IPSModuleStrict {
             'ICON' => 'Clock'
         ], 206);
 
+        $this->RegisterVariableBoolean("FertilizerMode", "Düngemodus aktiv", [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON' => 'Star'
+        ], 207);
+        $this->EnableAction('FertilizerMode');
+
         // Geraete-Status Variable (Position 901 = Diagnostik)
         $daIntervals = json_encode([
             [
@@ -198,6 +204,13 @@ class SmartLawnAI extends IPSModuleStrict {
                 $this->AddLogEvent('Sperrzeit aktiviert', 'Bewässerung blockiert bis zur manuellen Deaktivierung.', '#FF9800');
             } else {
                 $this->AddLogEvent('Sperrzeit deaktiviert', 'Bewässerung wieder freigegeben.', '#4CAF50');
+            }
+        } else if ($Ident === 'FertilizerMode') {
+            $this->SetValue($Ident, $Value);
+            if ($Value) {
+                $this->AddLogEvent('Düngemodus aktiviert', 'Nächster Bewässerungszyklus wird für frisch gedüngten Rasen optimiert.', '#9C27B0');
+            } else {
+                $this->AddLogEvent('Düngemodus deaktiviert', 'Normaler Bewässerungszyklus wiederhergestellt.', '#4CAF50');
             }
         } else if ($Ident === 'AutomaticActive') {
             // Zuerst alle Zonen-Zustaende zuruecksetzen (silent=false: aktive Ventile werden gestoppt)

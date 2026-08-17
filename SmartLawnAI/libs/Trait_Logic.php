@@ -114,8 +114,15 @@ trait SmartLawnAI_Logic {
             }
         }
         
-        // WateringActive: Zeigt "Bewässert" wenn ein Ventil läuft ODER Zonen in Warteschlange stehen
-        $displayAktiv = $einVentilIstAktiv || $anyQueued;
+        $displayAktiv = false;
+        foreach ($zones as $zone) {
+            $status = $this->GetZoneStatus($zone['SensorID']);
+            if (in_array($status, $displayAktivStatus) || $status === 'QUEUED') {
+                $displayAktiv = true;
+                break;
+            }
+        }
+        
         $wasActive = $this->GetValue('WateringActive');
         $this->SetValue('WateringActive', $displayAktiv);
         if ($wasActive !== $displayAktiv) {
@@ -524,7 +531,7 @@ trait SmartLawnAI_Logic {
         $finalAktiv = false;
         foreach ($zones as $zone) {
             $status = $this->GetZoneStatus($zone['SensorID']);
-            if (in_array($status, $displayAktivStatus)) {
+            if (in_array($status, $displayAktivStatus) || $status === 'QUEUED') {
                 $finalAktiv = true;
                 break;
             }

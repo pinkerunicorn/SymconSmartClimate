@@ -1063,7 +1063,6 @@ $result = GIO_Query(' . $geminiId . ',
         if (!$queueForStart && !$silent) {
             $this->SLogWarning('Automatik deaktiviert', 'Alle Ventile werden gestoppt und Zonen zurückgesetzt.');
             $this->SetSummaryStatus('Automatik deaktiviert (Zonen gestoppt)');
-            $this->AddLogEvent("System: Abbruch", "Automatik deaktiviert, alle Ventile gestoppt.", '#F44336');
         }
 
         $zonesJson = $this->ReadPropertyString('Zones');

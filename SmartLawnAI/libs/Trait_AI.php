@@ -26,142 +26,115 @@ trait SmartLawnAI_AI {
             return;
         }
 
-        // Hole das erste Element aus der Queue
         $item = array_shift($queue);
         $this->SetBuffer('GeminiRetryQueue', json_encode($queue));
 
+        $this->EvaluateEfficiencyWithGemini(
+            $item['sensorID'],
+            $item['startMoisture'],
+            $item['endMoisture'],
+            $item['durationMin'],
+            $item['vpd'],
+            $item['lux']
+        );
+
         if (empty($queue)) {
             $this->SetTimerInterval('GeminiRetryTimer', 0);
+        } else {
+            $this->SetTimerInterval('GeminiRetryTimer', 60000);
         }
-
-        $this->LogAndDebug('Weather', 'Starte Gemini Retry Versuch ' . ($item['retryCount'] + 1) . ' für Zone ' . $item['zoneID'], 0);
-
-        $this->EvaluateEfficiencyWithGemini(
-            $item['zoneID'],
-            $item['startFeuchte'],
-            $item['aktuelleFeuchte'],
-            $item['dauer'],
-            $item['vpd'],
-            $item['lux'],
-            $item['retryCount'] + 1
-        );
     }
 
-    public function EvaluateEfficiencyWithGemini(int $zoneID, float $startFeuchte, float $aktuelleFeuchte, float $dauer, float $vpd, float $lux, int $retryCount = 0): void {
-        $zoneName = 'Zone ' . $zoneID;
-        $zonesJson = $this->ReadPropertyString('Zones');
-        $zones = json_decode($zonesJson, true);
-        if (is_array($zones)) {
-            foreach ($zones as $z) {
-                if ($z['SensorID'] == $zoneID && !empty($z['GroupName'])) {
-                    $zoneName = $z['GroupName'];
-                    break;
-                }
-            }
-        }
-
-        // SmartGeminiIO auto-discover
+    public function EvaluateEfficiencyWithGemini(int $sensorID, float $startMoisture, float $endMoisture, int $durationMin, float $vpd, float $lux): void {
         $geminiInstances = IPS_GetInstanceListByModuleID(self::GEMINI_IO_GUID);
         if (empty($geminiInstances)) {
-            $this->LogAndDebug('Weather', 'SmartGeminiIO Instanz nicht gefunden! Bitte eine Instanz erstellen.', 0);
-            $this->AddLogEvent("{$zoneName}: Abschluss (ohne KI)", "Dauer: {$dauer} Min | VPD: " . number_format($vpd, 2) . " kPa | Feuchte: {$startFeuchte}% -> {$aktuelleFeuchte}%");
+            $this->addToGeminiRetryQueue($sensorID, $startMoisture, $endMoisture, $durationMin, $vpd, $lux);
             return;
         }
         $geminiId = $geminiInstances[0];
 
         $userPrompt  = "Du bist ein Agrar-Analyst. Bewerte den folgenden Bewässerungs-Zyklus:\n";
-        $userPrompt .= "- Zone ID: $zoneID\n";
-        $userPrompt .= "- Dauer der Bewässerung: $dauer Minuten\n";
-        $userPrompt .= "- Bodenfeuchte vor dem Gießen: $startFeuchte %\n";
-        $userPrompt .= "- Bodenfeuchte nach der Sickerpause: $aktuelleFeuchte %\n";
+        $userPrompt .= "- Zone Sensor ID: $sensorID\n";
+        $userPrompt .= "- Dauer der Bewässerung: $durationMin Minuten\n";
+        $userPrompt .= "- Bodenfeuchte vor dem Gießen: $startMoisture %\n";
+        $userPrompt .= "- Bodenfeuchte nach der Sickerpause: $endMoisture %\n";
         $userPrompt .= "- Wetter: Sättigungsdefizit (VPD) = $vpd kPa, Helligkeit = $lux Lux\n";
-        $userPrompt .= "\nBerechne einen neuen 'efficiencyPercentPerMinute'-Multiplikator für diese Zone (wie viel Prozent Feuchte bringt 1 Minute Gießen). Normaler Wert: 0.5 bis 3.0.";
+        $userPrompt .= "\nBerechne einen neuen 'efficiencyFactor' für diese Zone (Anpassung der Gießdauer). >1.0 bedeutet die Zone braucht mehr Wasser, <1.0 weniger.";
 
         $systemInstruction = 'Du antwortest ausschließlich im JSON-Format.';
 
         $responseSchema = json_encode([
             'type'       => 'OBJECT',
             'properties' => [
-                'newEfficiencyMultiplier' => ['type' => 'NUMBER', 'description' => 'Der neu berechnete Effizienz-Faktor.'],
-                'reasoning'              => ['type' => 'STRING', 'description' => 'Agronomische Begründung für diesen Wert.']
+                'efficiencyFactor' => ['type' => 'NUMBER', 'description' => 'Der Effizienz-Faktor (0.5 bis 2.0).'],
+                'reasoning'        => ['type' => 'STRING', 'description' => 'Agronomische Begründung für diesen Wert.']
             ],
-            'required' => ['newEfficiencyMultiplier', 'reasoning']
+            'required' => ['efficiencyFactor', 'reasoning']
         ]);
 
         $instanceId = $this->InstanceID;
 
-        // Async via IPS_RunScriptText â€” GIO_Query blockiert, daher in Background
         $script = '<?php
 
 declare(strict_types=1);
 
-$result = GIO_Query(' . $geminiId . ',
-                ' . var_export($userPrompt, true) . ',
-                ' . var_export($systemInstruction, true) . ',
-                ' . var_export($responseSchema, true) . ',
-                0.1
-            );
-            SLAI_ProcessGeminiResult(' . $instanceId . ', $result, ' . $zoneID . ', ' . $startFeuchte . ', ' . $aktuelleFeuchte . ', ' . $dauer . ', ' . $vpd . ', ' . $lux . ', ' . $retryCount . ');
-        ';
+try {
+    $result = GIO_Query(' . $geminiId . ',
+        ' . var_export($userPrompt, true) . ',
+        ' . var_export($systemInstruction, true) . ',
+        ' . var_export($responseSchema, true) . ',
+        0.1
+    );
+} catch (Throwable $e) {
+    $result = "";
+}
+SLAI_ProcessGeminiEfficiencyResult(' . $instanceId . ', ' . $sensorID . ', (string)$result);
+';
         IPS_RunScriptText($script);
     }
 
-    /**
-     * Verarbeitet das Ergebnis der Gemini-Effizienz-Analyse.
-     * Wird aus dem Background-Script via IPS_RunScriptText aufgerufen.
-     *
-     * @param string $jsonText Bereits extrahierter JSON-Text von GIO_Query
-     */
-    public function ProcessGeminiResult(string $jsonText, int $zoneID, float $startFeuchte, float $aktuelleFeuchte, float $dauer, float $vpd, float $lux, int $retryCount): void {
-        $zoneName = 'Zone ' . $zoneID;
-        $zonesJson = $this->ReadPropertyString('Zones');
-        $zones = json_decode($zonesJson, true);
-        if (is_array($zones)) {
-            foreach ($zones as $z) {
-                if ($z['SensorID'] == $zoneID && !empty($z['GroupName'])) {
-                    $zoneName = $z['GroupName'];
-                    break;
-                }
-            }
+    public function ProcessGeminiEfficiencyResult(int $sensorID, string $result): void {
+        if (empty($result)) {
+            $this->LogAndDebug('Weather', "Leeres Ergebnis beim Gemini Effizienz-Lernen für Sensor $sensorID.", 2);
+            return;
         }
 
-        if (!empty($jsonText)) {
-            $parsed = json_decode($jsonText, true);
-            if (is_array($parsed) && isset($parsed['newEfficiencyMultiplier'])) {
-                $neueEffizienz = (float)$parsed['newEfficiencyMultiplier'];
-                $begruendung   = $parsed['reasoning'] ?? '';
+        $parsed = json_decode($result, true);
+        if (is_array($parsed) && isset($parsed['efficiencyFactor'])) {
+            $efficiencyFactor = (float)$parsed['efficiencyFactor'];
+            $efficiencyFactor = max(0.5, min(2.0, $efficiencyFactor));
+            $reasoning = $parsed['reasoning'] ?? '';
 
-                $this->SetZoneEffizienz($zoneID, $neueEffizienz);
-                $this->SLogInfo('Gemini Effizienz-Lernen (Zone ' . $zoneID . '): Neuer Faktor = ' . $neueEffizienz . 'x', $begruendung);
-                $this->AddLogEvent("{$zoneName}: KI-Lernen erfolgreich", "Neue Effizienz: {$neueEffizienz}x. Grund: {$begruendung}", '#9C27B0');
-                return;
-            }
-        }
-
-        // Fehlerfall: Retry
-        if ($retryCount < 3) {
-            $this->LogAndDebug('Weather', "Fehler beim Gemini Effizienz-Lernen für Zone $zoneID. Starte Retry in 5 Minuten (Versuch " . ($retryCount + 1) . ").", 0);
-
-            $queueStr = $this->GetBuffer('GeminiRetryQueue');
-            $queue    = $queueStr ? json_decode($queueStr, true) : [];
-            if (!is_array($queue)) $queue = [];
-
-            $queue[] = [
-                'zoneID'          => $zoneID,
-                'startFeuchte'    => $startFeuchte,
-                'aktuelleFeuchte' => $aktuelleFeuchte,
-                'dauer'           => $dauer,
-                'vpd'             => $vpd,
-                'lux'             => $lux,
-                'retryCount'      => $retryCount
-            ];
-
-            $this->SetBuffer('GeminiRetryQueue', json_encode($queue));
-            $this->SetTimerInterval('GeminiRetryTimer', 300000);
+            $this->SetPersistentZoneEffizienz($sensorID, $efficiencyFactor);
+            $this->AddLogEvent("Sensor {$sensorID}: KI-Lernen erfolgreich", "Neue Effizienz: {$efficiencyFactor}x. Grund: {$reasoning}", '#9C27B0');
+            $this->SLogInfo('Gemini Effizienz-Lernen (Sensor ' . $sensorID . ')', 'Neuer Faktor = ' . $efficiencyFactor . 'x. ' . $reasoning);
         } else {
-            $this->LogAndDebug('Weather', "Gemini Effizienz-Lernen für Zone $zoneID nach 3 Versuchen endgültig fehlgeschlagen.", 0);
-            $this->SLogError('Gemini Effizienz-Lernen fehlgeschlagen', 'Zone ' . $zoneID . ' endgültig fehlgeschlagen nach 3 Versuchen');
-            $this->AddLogEvent("{$zoneName}: KI-Lernen fehlgeschlagen", 'SmartGeminiIO: Keine Antwort nach 3 Versuchen.', '#F44336');
+            $this->LogAndDebug('Weather', "Fehler beim Parsen der Gemini-Antwort für Sensor $sensorID: " . $result, 2);
         }
+    }
+
+    private function addToGeminiRetryQueue(int $sensorID, float $startMoisture, float $endMoisture, int $durationMin, float $vpd, float $lux): void {
+        $queueStr = $this->GetBuffer('GeminiRetryQueue');
+        $queue    = $queueStr ? json_decode($queueStr, true) : [];
+        if (!is_array($queue)) {
+            $queue = [];
+        }
+
+        $queue[] = [
+            'sensorID'      => $sensorID,
+            'startMoisture' => $startMoisture,
+            'endMoisture'   => $endMoisture,
+            'durationMin'   => $durationMin,
+            'vpd'           => $vpd,
+            'lux'           => $lux,
+            'retryCount'    => 0
+        ];
+
+        if (count($queue) > 10) {
+            array_shift($queue);
+        }
+
+        $this->SetBuffer('GeminiRetryQueue', json_encode($queue));
+        $this->SetTimerInterval('GeminiRetryTimer', 60000);
     }
 }

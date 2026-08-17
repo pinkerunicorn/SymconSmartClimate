@@ -176,29 +176,19 @@ trait SmartLawnAI_Helpers {
             return false;
         }
 
-        for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
-            try {
-                $result = RequestAction($variableID, $value);
-                if ($result !== false) {
-                    if ($attempt > 0) {
-                        $this->LogAndDebug('SafeRequestAction', 'Erfolgreich nach ' . ($attempt + 1) . '. Versuch (Ventil-ID: ' . $variableID . ')', 0);
-                    }
-                    $errorMsg = '';
-                    return true;
-                }
-                $errorMsg = 'RequestAction gab false zurueck (Ventil-ID: ' . $variableID . ')';
-            } catch (\Throwable $e) {
-                $errorMsg = $e->getMessage();
+        try {
+            $result = RequestAction($variableID, $value);
+            if ($result !== false) {
+                $errorMsg = '';
+                return true;
             }
-
-            if ($attempt < $maxRetries) {
-                $this->LogAndDebug('SafeRequestAction', 'Versuch ' . ($attempt + 1) . ' fehlgeschlagen (ID: ' . $variableID . '): ' . $errorMsg . ' - Retry in 3s...', 0);
-                IPS_Sleep(3000);
-            }
+            $errorMsg = 'RequestAction gab false zurueck (Ventil-ID: ' . $variableID . ')';
+        } catch (\Throwable $e) {
+            $errorMsg = $e->getMessage();
         }
 
-        $this->LogAndDebug('SafeRequestAction', 'Endgueltig fehlgeschlagen nach ' . ($maxRetries + 1) . ' Versuchen (ID: ' . $variableID . '): ' . $errorMsg, 0);
-        $this->SLogError('Sende-Fehler', 'Ventil-ID ' . $variableID . ': ' . $errorMsg . ' (nach ' . ($maxRetries + 1) . ' Versuchen)');
+        $this->LogAndDebug('SafeRequestAction', 'Fehlgeschlagen (ID: ' . $variableID . '): ' . $errorMsg, 0);
+        $this->SLogError('Sende-Fehler', 'Ventil-ID ' . $variableID . ': ' . $errorMsg);
         return false;
     }
 
@@ -310,22 +300,11 @@ trait SmartLawnAI_Helpers {
     }
 
     private function GetZoneStateData(string $key): string {
-        $json = $this->ReadAttributeString('ZoneStates');
-        if ($json === '') return '';
-        $data = json_decode($json, true);
-        return $data[$key] ?? '';
+        return $this->GetBuffer('Zone_' . $key);
     }
 
     private function SetZoneStateData(string $key, string $value): void {
-        $json = $this->ReadAttributeString('ZoneStates');
-        $data = $json === '' ? [] : json_decode($json, true);
-        if (!is_array($data)) $data = [];
-        if ($value === '') {
-            unset($data[$key]);
-        } else {
-            $data[$key] = $value;
-        }
-        $this->WriteAttributeString('ZoneStates', json_encode($data));
+        $this->SetBuffer('Zone_' . $key, $value);
     }
 
     protected function GetZoneStatus($sid): string {
@@ -337,13 +316,27 @@ trait SmartLawnAI_Helpers {
         $this->SetZoneStateData('ZoneStatus_' . $sid, $status);
     }
 
+    protected function GetPersistentZoneEffizienz($sid): float {
+        $json = $this->ReadAttributeString('ZoneEfficiencies');
+        $data = json_decode($json, true);
+        if (!is_array($data)) return 1.0;
+        return isset($data[(string)$sid]) ? (float)$data[(string)$sid] : 1.0;
+    }
+
+    protected function SetPersistentZoneEffizienz($sid, float $eff): void {
+        $json = $this->ReadAttributeString('ZoneEfficiencies');
+        $data = json_decode($json, true);
+        if (!is_array($data)) $data = [];
+        $data[(string)$sid] = $eff;
+        $this->WriteAttributeString('ZoneEfficiencies', json_encode($data));
+    }
+
     protected function GetZoneEffizienz($sid): float {
-        $v = $this->GetZoneStateData('ZoneEffizienz_' . $sid);
-        return $v !== '' ? (float)$v : 1.0;
+        return $this->GetPersistentZoneEffizienz($sid);
     }
 
     protected function SetZoneEffizienz($sid, float $eff): void {
-        $this->SetZoneStateData('ZoneEffizienz_' . $sid, (string)$eff);
+        $this->SetPersistentZoneEffizienz($sid, $eff);
     }
 
     protected function GetZoneWateringStart($sid): int {

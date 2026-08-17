@@ -188,6 +188,12 @@ class SmartLawnAI extends IPSModuleStrict {
         
         // NEU: Persistenter Status-Speicher für Zonen (überlebt Modul-Updates)
         $this->RegisterAttributeString('ZoneStates', '{}');
+        
+        // Persistente Effizienz-Faktoren pro Zone (überlebt Modul-Updates + Buffer-Reset)
+        $this->RegisterAttributeString('ZoneEfficiencies', '{}');
+        
+        // Gemini Effizienz-Retry Queue
+        $this->RegisterAttributeString('GeminiRetryQueue', '[]');
 
         // NEU: Gemini Retry Timer
         $this->RegisterTimer('GeminiRetryTimer', 0, 'SLAI_ProcessGeminiRetry($_IPS[\'TARGET\']);');
@@ -319,12 +325,12 @@ class SmartLawnAI extends IPSModuleStrict {
 
         $this->EnableAction('DefaultZielFeuchte');
         IPS_SetName($this->GetIDForIdent('DefaultZielFeuchte'), 'Bewässerungs-Ziel-Feuchte');
-        if (GetValue($this->GetIDForIdent('DefaultZielFeuchte')) == 0) { $this->SetValue('DefaultZielFeuchte', 55.0); }
+        if (IPS_GetVariable($this->GetIDForIdent('DefaultZielFeuchte'))['VariableUpdated'] == 0) { $this->SetValue('DefaultZielFeuchte', 55.0); }
          
         
         $this->EnableAction('DefaultStartSchwellwert');
         IPS_SetName($this->GetIDForIdent('DefaultStartSchwellwert'), 'Bewässerungs-Trigger-Feuchte');
-        if (GetValue($this->GetIDForIdent('DefaultStartSchwellwert')) == 0) { $this->SetValue('DefaultStartSchwellwert', 20.0); }
+        if (IPS_GetVariable($this->GetIDForIdent('DefaultStartSchwellwert'))['VariableUpdated'] == 0) { $this->SetValue('DefaultStartSchwellwert', 20.0); }
          
         
         
@@ -334,7 +340,7 @@ class SmartLawnAI extends IPSModuleStrict {
         
         $this->EnableAction('GlobalMaxDuration');
         IPS_SetName($this->GetIDForIdent('GlobalMaxDuration'), 'Maximale Bewässerungsdauer');
-        if (GetValue($this->GetIDForIdent('GlobalMaxDuration')) == 0) { $this->SetValue('GlobalMaxDuration', 30); }
+        if (IPS_GetVariable($this->GetIDForIdent('GlobalMaxDuration'))['VariableUpdated'] == 0) { $this->SetValue('GlobalMaxDuration', 30); }
          
 
         $splitterID = $this->ReadPropertyInteger('GardenaSplitterID');
@@ -395,6 +401,27 @@ class SmartLawnAI extends IPSModuleStrict {
                 $this->UnregisterVariable('CurrentSprinklerIndex_'. $sid);
             }
         }
+
+        // Safety: Nach Modul-Update (Buffer-Reset) physisch offene Ventile stoppen
+        $sprinklersJson = $this->ReadPropertyString('Sprinklers');
+        $allSprinklers = json_decode($sprinklersJson, true);
+        if (is_array($allSprinklers)) {
+            foreach ($allSprinklers as $s) {
+                $res = $this->ResolveSprinklerObject((int)@$s['ValveID']);
+                if ($res['ActivityID'] > 0 && @IPS_VariableExists($res['ActivityID'])) {
+                    $act = strtoupper((string)GetValue($res['ActivityID']));
+                    $isOpen = (strpos($act, 'WATERING') !== false || strpos($act, 'OPEN') !== false || $act === '1' || $act === '2');
+                    if ($isOpen && $res['ValveID'] > 0) {
+                        $this->SLogWarning('ApplyChanges Safety', 'Ventil ' . ($s['SprinklerName'] ?? $s['ValveID']) . ' ist noch offen. Sende STOP...');
+                        @RequestAction($res['ValveID'], 'STOP_UNTIL_NEXT_TASK');
+                        $this->AddLogEvent('Modul-Update Safety', 'Ventil ' . ($s['SprinklerName'] ?? $s['ValveID']) . ' wurde gestoppt.', '#FF9800');
+                    }
+                }
+            }
+        }
+        // WateringActive zuruecksetzen (Buffer ist nach Update leer)
+        $this->SetValue('WateringActive', false);
+        $this->NotifySmartControllerIrrigation(false);
     }
 
     public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void {

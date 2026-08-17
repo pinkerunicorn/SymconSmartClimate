@@ -143,7 +143,12 @@ trait SmartLawnAI_Logic {
 
         // 3. Laufzeit-Steuerung des Timers
         $active = GetValue($this->GetIDForIdent('AutomaticActive'));
-        if ($active) {
+        $anyZoneActive = false;
+        foreach ($zones as $z) {
+            $s = $this->GetZoneStatus($z['SensorID']);
+            if ($s !== 'IDLE') { $anyZoneActive = true; break; }
+        }
+        if ($active || $anyZoneActive) {
             $this->SetTimerInterval('LawnAITimer', 60000);
         } else {
             $this->SetTimerInterval('LawnAITimer', 0);
@@ -229,6 +234,10 @@ trait SmartLawnAI_Logic {
 
             if (empty($zoneSprinklers)) {
                 $this->LogAndDebug('ProcessLogic', 'Zone '. $zone['SensorID'] . 'hat keine zugeordneten Sprinkler. Überspringe.', 0);
+                if ($aktuellerStatus === 'QUEUED') {
+                    $this->SetZoneStatus($zone['SensorID'], 'IDLE');
+                    $this->SLogWarning('Warteschlange', 'Zone ' . $zone['SensorID'] . ' ohne Sprinkler war QUEUED. Status zurückgesetzt auf IDLE.');
+                }
                 continue;
             }
 
@@ -443,9 +452,31 @@ trait SmartLawnAI_Logic {
                             $this->SafeRequestAction($res['ValveID'], 'STOP_UNTIL_NEXT_TASK');
                         }
                         $einVentilIstAktiv = false;
+                        // Bei systemischem Cloud-Freeze: Auch QUEUED-Zonen zuruecksetzen
+                        foreach ($zones as $qz) {
+                            if ($this->GetZoneStatus($qz['SensorID']) === 'QUEUED') {
+                                $this->SetZoneStatus($qz['SensorID'], 'IDLE');
+                                $qzName = isset($qz['GroupName']) && !empty($qz['GroupName']) ? $qz['GroupName'] : 'Zone ' . $qz['SensorID'];
+                                $this->AddLogEvent("{$qzName}: Abgebrochen", 'Systemischer Cloud-Freeze vermutet. Warteschlange geleert.', '#F44336');
+                            }
+                        }
                         break;
                     }
+                    if ($ventilOffen && $aktuellerStatus === 'WATERING') {
+                        $this->SetBuffer('ValveClosedCount_' . $zone['SensorID'], '0');
+                    }
                     if (!$ventilOffen && $aktuellerStatus === 'WATERING') {
+                        // Debounce: Mindestens 2 aufeinanderfolgende CLOSED-Meldungen bevor Bewaesserung als beendet gilt
+                        $closedCount = (int)$this->GetBuffer('ValveClosedCount_' . $zone['SensorID']);
+                        $closedCount++;
+                        $this->SetBuffer('ValveClosedCount_' . $zone['SensorID'], (string)$closedCount);
+                        if ($closedCount < 2) {
+                            $this->LogAndDebug('Debounce', 'Ventil meldet CLOSED (Zaehler: ' . $closedCount . '/2). Warte auf Bestaetigung...', 0);
+                            break;
+                        }
+                        // Reset counter
+                        $this->SetBuffer('ValveClosedCount_' . $zone['SensorID'], '0');
+                        
                         $this->SLogInfo('Bewässerung beendet', 'Sprinkler: ' . $currentSprinklerName . ' in Zone ' . $zone['SensorID'] . ' | Status: ' . $hwVal);
                         
                         $currentIndex++;
@@ -563,24 +594,25 @@ trait SmartLawnAI_Logic {
 
         // 6. Heartbeat für die Webfront Anzeige (Zeitstempel aktualisieren)
         $automaticActive = GetValue($this->GetIDForIdent('AutomaticActive'));
-        if ($automaticActive) {
+        
+        $hwZone = null;
+        $waterZone = null;
+        $sickerZone = null;
+        $queuedZone = null;
+        
+        foreach ($zones as $zone) {
+            $status = $this->GetZoneStatus($zone['SensorID']);
+            if ($status === 'HARDWARE_FEHLER') $hwZone = $zone;
+            elseif ($status === 'WATERING'|| $status === 'WAITING_FOR_OPEN') $waterZone = $zone;
+            elseif ($status === 'WAITING_FOR_RESULT') $sickerZone = $zone;
+            elseif ($status === 'QUEUED') $queuedZone = $zone;
+        }
+
+        $einVentilIstAktivOderFehler = ($hwZone || $waterZone || $sickerZone || $queuedZone);
+
+        if ($automaticActive || $einVentilIstAktivOderFehler) {
             $currentStatus = GetValue($this->GetIDForIdent('SummaryStatus'));
             $baseStatus = preg_replace('/ \(\d{2}:\d{2}\)$/', '', $currentStatus);
-
-            $hwZone = null;
-            $waterZone = null;
-            $sickerZone = null;
-            $queuedZone = null;
-            
-            foreach ($zones as $zone) {
-                $status = $this->GetZoneStatus($zone['SensorID']);
-                if ($status === 'HARDWARE_FEHLER') $hwZone = $zone;
-                elseif ($status === 'WATERING'|| $status === 'WAITING_FOR_OPEN') $waterZone = $zone;
-                elseif ($status === 'WAITING_FOR_RESULT') $sickerZone = $zone;
-                elseif ($status === 'QUEUED') $queuedZone = $zone;
-            }
-
-            $einVentilIstAktivOderFehler = ($hwZone || $waterZone || $sickerZone || $queuedZone);
 
             if ($hwZone) {
                 $zoneName = isset($hwZone['GroupName']) && !empty($hwZone['GroupName']) ? $hwZone['GroupName'] : 'Zone '. $hwZone['SensorID'];
@@ -776,14 +808,26 @@ trait SmartLawnAI_Logic {
             if ($effizienz <= 0) $effizienz = 1.0;
             $maxDuration = GetValue($this->GetIDForIdent('GlobalMaxDuration'));
 
+            $zName = isset($zone['GroupName']) && !empty($zone['GroupName']) ? $zone['GroupName'] : 'Zone '. $sid;
+            $zoneSprinklers = [];
+            foreach ($sprinklers as $s) {
+                if ($s['ZoneName'] === $zName) $zoneSprinklers[] = $s;
+            }
+            if (empty($zoneSprinklers)) {
+                $this->SLogWarning('Planer', 'Zone ' . $zName . ' hat keine Sprinkler. Wird für KI übersprungen.');
+                continue;
+            }
+
             $zoneContext = [
                 'zoneId'=> (int)$sid,
-                'groupName'=> isset($zone['GroupName']) ? $zone['GroupName'] : ('Zone '. $sid),
+                'groupName'=> $zName,
                 'currentMoisturePercent'=> $aktuelleFeuchte,
                 'targetMoisturePercent'=> $zielWert,
                 'startMoisturePercent'=> $startWert,
                 'learnedEfficiencyPercentPerMinute'=> $effizienz,
-                'maxDurationMinutes'=> $maxDuration
+                'maxDurationMinutes'=> $maxDuration,
+                'sprinklerCount'=> count($zoneSprinklers),
+                'sprinklersRunSequentially'=> true
             ];
             if ($soilTemp !== null) {
                 $zoneContext['soilTemperatureCelsius'] = $soilTemp;
@@ -804,6 +848,7 @@ trait SmartLawnAI_Logic {
         $userPrompt .= "- Ist die Bodentemperatur zu niedrig, kühle den Boden nicht weiter ab.\n";
         $userPrompt .= "- Nutze Helligkeit und Luftfeuchte, um die aktuelle Verdunstungsrate abzuschätzen.\n";
         $userPrompt .= "- Berechne für JEDE 'zoneId'die exakte Laufzeit in Minuten (0 bis maxDurationMinutes).\n";
+        $userPrompt .= "- WICHTIG: Beachte 'sprinklerCount' pro Zone! Jeder Sprinkler laeuft NACHEINANDER fuer die angegebene Dauer. Passe die Dauer so an, dass die GESAMTZEIT aller Sprinkler der gewuenschten Bewaesserungsmenge entspricht.\n";
         
         $isFertilizerMode = GetValue($this->GetIDForIdent('FertilizerMode'));
         if ($isFertilizerMode) {
@@ -1095,12 +1140,20 @@ $result = GIO_Query(' . $geminiId . ',
     }
 
     private function triggerManualStart(): void {
-        $this->SetSummaryStatus('Manueller Start angefordert...');
-        $this->LogAndDebug('ManualStart', 'Manueller Start angefordert. Setze Zonen zurück...', 0);
-        $this->AddLogEvent("System: Manueller Start", "Bewässerung wird sofort gestartet...", '#2196F3');
-        $this->resetAllZones(false, true); // Zonen nur stoppen, nicht sofort QUEUED setzen (Race Condition vermeiden)
-        $this->SetBuffer('CalculatePlanPending', 'true');
-        $this->SetTimerInterval('LawnAITimer', 1000); // ProcessLogic wird im nächsten Tick aufgerufen
+        if (!IPS_SemaphoreEnter('SmartLawnAI_' . $this->InstanceID, 2000)) {
+            $this->SLogWarning('ManualStart', 'Konnte Semaphore nicht erhalten. Bitte erneut versuchen.');
+            return;
+        }
+        try {
+            $this->SetSummaryStatus('Manueller Start angefordert...');
+            $this->LogAndDebug('ManualStart', 'Manueller Start angefordert. Setze Zonen zurück...', 0);
+            $this->AddLogEvent("System: Manueller Start", "Bewässerung wird sofort gestartet...", '#2196F3');
+            $this->resetAllZones(false, true); // Zonen nur stoppen, nicht sofort QUEUED setzen (Race Condition vermeiden)
+            $this->SetBuffer('CalculatePlanPending', 'true');
+            $this->SetTimerInterval('LawnAITimer', 1000); // ProcessLogic wird im nächsten Tick aufgerufen
+        } finally {
+            IPS_SemaphoreLeave('SmartLawnAI_' . $this->InstanceID);
+        }
     }
 
     public function CheckAllHardwareStatus(): string {
@@ -1110,6 +1163,16 @@ $result = GIO_Query(' . $geminiId . ',
             if ($inst['InstanceStatus'] >= 200) {
                 return 'Gardena Cloud/Splitter offline (Status: ' . $inst['InstanceStatus'] . ')';
             }
+        }
+        
+        // Check global sensors
+        $airTempID = $this->ReadPropertyInteger('GlobalAirTempID');
+        if ($airTempID > 1 && !@IPS_VariableExists($airTempID)) {
+            return 'Temperatursensor (ID: ' . $airTempID . ') nicht erreichbar';
+        }
+        $humidityID = $this->ReadPropertyInteger('GlobalHumidityID');
+        if ($humidityID > 1 && !@IPS_VariableExists($humidityID)) {
+            return 'Luftfeuchtesensor (ID: ' . $humidityID . ') nicht erreichbar';
         }
 
         $zonesJson = $this->ReadPropertyString('Zones');
@@ -1142,8 +1205,21 @@ $result = GIO_Query(' . $geminiId . ',
                     $istFehler = in_array($hwStr, ['ERROR', 'WARNING', 'OFFLINE', 'DEFECT', 'FAULT'])
                                  || (is_int($hwStatus) && $hwStatus > 0);
                     if ($istFehler) {
-                        return false;
+                        $bufferKey = 'HardwareErrorSince_' . ($s['ValveID'] ?? 0);
+                        $errorSince = $this->GetBuffer($bufferKey);
+                        if ($errorSince === '') {
+                            $this->SetBuffer($bufferKey, (string)time());
+                            return true; // Still within grace period (first detection)
+                        }
+                        $gracePeriod = $this->ReadPropertyInteger('HardwareGracePeriod');
+                        if ((time() - (int)$errorSince) < $gracePeriod) {
+                            return true; // Still within grace period
+                        }
+                        return false; // Grace period expired
                     }
+                    // Clear error buffer if OK
+                    $bufferKey = 'HardwareErrorSince_' . ($s['ValveID'] ?? 0);
+                    $this->SetBuffer($bufferKey, '');
                 }
             }
         }
@@ -1207,7 +1283,15 @@ $result = GIO_Query(' . $geminiId . ',
             }
         }
         
-        // Fallback
-        return $today + 86400 + ($times[0] * 3600);
+        // Fallback: pruefe auch Sperrzeit
+        $fallback = $today + 86400 + ($times[0] * 3600);
+        if ($sperrzeitAktiv && $this->IsTimeForbidden($fallback)) {
+            // Naechsten nicht-gesperrten Slot finden
+            foreach ($times as $h) {
+                $fb = $today + 86400 + ($h * 3600);
+                if (!$this->IsTimeForbidden($fb)) return $fb;
+            }
+        }
+        return $fallback;
     }
 }

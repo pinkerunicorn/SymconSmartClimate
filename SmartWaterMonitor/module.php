@@ -192,9 +192,9 @@ class SmartWaterMonitor extends IPSModuleStrict
         $irriVar = $this->ReadPropertyInteger('IrrigationVariableID');
         if ($irriVar > 0 && @IPS_VariableExists($irriVar)) {
             $this->RegisterMessage($irriVar, VM_UPDATE);
-            $this->SetValue('IrrigationActive', GetValue($irriVar));
+            $this->SetValueIfChanged('IrrigationActive', GetValue($irriVar));
         } else {
-            $this->SetValue('IrrigationActive', false);
+            $this->SetValueIfChanged('IrrigationActive', false);
         }
         
         // Initialer Lauf der Kostenberechnung
@@ -214,7 +214,7 @@ class SmartWaterMonitor extends IPSModuleStrict
         
         // Timer fired -> water running continuously for too long!
         $this->SetTimerInterval('LeakTimer', 0); // Stop timer
-        $this->SetValue('LeakAlarm', true);
+        $this->SetValueIfChanged('LeakAlarm', true);
         $this->SLogError('LECKAGE-ALARM! Wasser fließt ununterbrochen seit ' . $this->ReadPropertyInteger('MaxContinuousFlowMinutes') . ' Minuten!');
     }
 
@@ -222,7 +222,7 @@ class SmartWaterMonitor extends IPSModuleStrict
     {
         $irriVar = $this->ReadPropertyInteger('IrrigationVariableID');
         if ($SenderID === $irriVar && $Message === VM_UPDATE) {
-            $this->SetValue('IrrigationActive', $Data[0]);
+            $this->SetValueIfChanged('IrrigationActive', $Data[0]);
         }
     }
 
@@ -238,15 +238,15 @@ class SmartWaterMonitor extends IPSModuleStrict
         if ($lastUpdateDay !== $currentDate) {
             $this->WriteAttributeFloat('StartOfDayTotal', $total);
             $this->WriteAttributeString('LastUpdateDay', $currentDate);
-            $this->SetValue('ConsumptionToday', 0.0);
-            $this->SetValue('CostToday', 0.0);
+            $this->SetValueIfChanged('ConsumptionToday', 0.0);
+            $this->SetValueIfChanged('CostToday', 0.0);
         }
 
         if ($lastUpdateMonth !== $currentMonth) {
             $this->WriteAttributeFloat('StartOfMonthTotal', $total);
             $this->WriteAttributeString('LastUpdateMonth', $currentMonth);
-            $this->SetValue('ConsumptionMonth', 0.0);
-            $this->SetValue('CostMonth', 0.0);
+            $this->SetValueIfChanged('ConsumptionMonth', 0.0);
+            $this->SetValueIfChanged('CostMonth', 0.0);
         }
 
         $startOfDay = $this->ReadAttributeFloat('StartOfDayTotal');
@@ -259,8 +259,8 @@ class SmartWaterMonitor extends IPSModuleStrict
         if ($consToday < 0) $consToday = 0;
         if ($consMonth < 0) $consMonth = 0;
 
-        $this->SetValue('ConsumptionToday', $consToday);
-        $this->SetValue('ConsumptionMonth', $consMonth);
+        $this->SetValueIfChanged('ConsumptionToday', $consToday);
+        $this->SetValueIfChanged('ConsumptionMonth', $consMonth);
 
         // Hole Preise aus Registry
         $regId = $this->ReadPropertyInteger('RegistryID');
@@ -279,12 +279,18 @@ class SmartWaterMonitor extends IPSModuleStrict
         $costToday = ($consToday * $priceWater) + $dailyBase;
         $costMonth = ($consMonth * $priceWater) + $monthlyBase;
 
-        $this->SetValue('CostToday', $costToday);
-        $this->SetValue('CostMonth', $costMonth);
+        $this->SetValueIfChanged('CostToday', $costToday);
+        $this->SetValueIfChanged('CostMonth', $costMonth);
     }
 
     public function ReceiveData(string $JSONString): string
     {
+        $hash = md5($JSONString);
+        if ($this->GetBuffer('LastPayloadHash') === $hash) {
+            return "OK";
+        }
+        $this->SetBuffer('LastPayloadHash', $hash);
+
         try {
             $data = json_decode($JSONString);
             if ($data === null && json_last_error() !== JSON_ERROR_NONE) return 'NOK';
@@ -304,7 +310,7 @@ class SmartWaterMonitor extends IPSModuleStrict
             // Online status (LWT)
             if ($topic === $base . '/status') {
                 $isOnline = (strtolower($payloadStr) === 'online');
-                $this->SetValue('Online', $isOnline);
+                $this->SetValueIfChanged('Online', $isOnline);
                 return "OK";
             }
 
@@ -342,12 +348,12 @@ class SmartWaterMonitor extends IPSModuleStrict
                     }
                     
                     $smoothedValue = round($smoothedValue, 2);
-                    $this->SetValue('FlowRate', $smoothedValue);
+                    $this->SetValueIfChanged('FlowRate', $smoothedValue);
                     
                     if ($smoothedValue > 0) {
                         // Water started running
                         if (!$this->GetValue('WaterRunning')) {
-                            $this->SetValue('WaterRunning', true);
+                            $this->SetValueIfChanged('WaterRunning', true);
                             
                             // Start Leak Timer if configured
                             $maxMinutes = $this->ReadPropertyInteger('MaxContinuousFlowMinutes');
@@ -357,11 +363,11 @@ class SmartWaterMonitor extends IPSModuleStrict
                         }
                     } else {
                         // Water stopped running
-                        $this->SetValue('WaterRunning', false);
+                        $this->SetValueIfChanged('WaterRunning', false);
                         $this->SetTimerInterval('LeakTimer', 0); // Stop timer
                         // Optional: Reset Leak Alarm automatically when water stops?
                         // Usually an alarm should be manually acknowledged, but let's reset it for convenience.
-                        $this->SetValue('LeakAlarm', false);
+                        $this->SetValueIfChanged('LeakAlarm', false);
                     }
                 }
                 
@@ -388,8 +394,8 @@ class SmartWaterMonitor extends IPSModuleStrict
                         $currentLiters = $this->GetValue('TotalConsumptionLiter');
                         $newLiters = $currentLiters + $delta;
                         
-                        $this->SetValue('TotalConsumptionLiter', $newLiters);
-                        $this->SetValue('TotalConsumption', $newLiters / 1000.0);
+                        $this->SetValueIfChanged('TotalConsumptionLiter', $newLiters);
+                        $this->SetValueIfChanged('TotalConsumption', $newLiters / 1000.0);
                         
                         $this->UpdateCosts();
                     }
@@ -406,12 +412,12 @@ class SmartWaterMonitor extends IPSModuleStrict
     {
         switch ($Ident) {
             case 'TotalConsumption':
-                $this->SetValue('TotalConsumption', $Value);
-                $this->SetValue('TotalConsumptionLiter', $Value * 1000.0);
+                $this->SetValueIfChanged('TotalConsumption', $Value);
+                $this->SetValueIfChanged('TotalConsumptionLiter', $Value * 1000.0);
                 break;
             case 'TotalConsumptionLiter':
-                $this->SetValue('TotalConsumptionLiter', $Value);
-                $this->SetValue('TotalConsumption', $Value / 1000.0);
+                $this->SetValueIfChanged('TotalConsumptionLiter', $Value);
+                $this->SetValueIfChanged('TotalConsumption', $Value / 1000.0);
                 break;
             default:
                 throw new Exception("Invalid ident");
@@ -496,6 +502,16 @@ class SmartWaterMonitor extends IPSModuleStrict
         ];
 
         return json_encode($form);
+    }
+
+
+    protected function SetValueIfChanged(string $ident, mixed $value): bool
+    {
+        if ($this->GetValue($ident) !== $value) {
+            $this->SetValue($ident, $value);
+            return true;
+        }
+        return false;
     }
 }
 

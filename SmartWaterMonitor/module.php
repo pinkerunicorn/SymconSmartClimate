@@ -114,7 +114,7 @@ class SmartWaterMonitor extends IPSModuleStrict
             'DIGITS'       => 2
         ], 11);
         
-        $this->RegisterVariableFloat("ConsumptionMonth", "Verbrauch dieser Monat", [
+                $this->RegisterVariableFloat("ConsumptionMonth", "Verbrauch dieser Monat", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'SUFFIX'       => ' m³',
             'ICON'         => 'faucet-drip',
@@ -128,8 +128,18 @@ class SmartWaterMonitor extends IPSModuleStrict
         ], 13);
 
         $wateringOptions = json_encode([
-            ['Value' => false, 'Caption' => 'Nein', 'IconActive' => false, 'Color' => -1],
-            ['Value' => true, 'Caption' => 'Ja (Alarm gesperrt)', 'IconActive' => true, 'IconValue' => 'droplet', 'Color' => 0x0088FF]
+            [
+                'Value' => false, 'Caption' => 'Nein',
+                'IconActive' => false, 'IconValue' => '',
+                'ColorActive' => false, 'ColorDisplay' => -1, 'ColorValue' => -1,
+                'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1
+            ],
+            [
+                'Value' => true, 'Caption' => 'Ja (Alarm gesperrt)',
+                'IconActive' => true, 'IconValue' => 'droplet',
+                'ColorActive' => true, 'ColorDisplay' => 0x0088FF, 'ColorValue' => 0x0088FF,
+                'ContentColorActive' => false, 'ContentColorDisplay' => -1, 'ContentColorValue' => -1
+            ]
         ]);
         $this->RegisterVariableBoolean("IrrigationActive", "Bewässerung aktiv", [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
@@ -488,3 +498,4 @@ class SmartWaterMonitor extends IPSModuleStrict
         return json_encode($form);
     }
 }
+

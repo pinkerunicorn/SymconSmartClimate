@@ -10,5 +10,6 @@
     "parentRequirements": [],
     "childRequirements": [],
     "implemented": [],
-    "prefix": "SCZ"
+    "prefix": "SCZ",
+    "author": "Florian Graßinger"
 }

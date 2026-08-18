@@ -70,8 +70,6 @@ class SmartClimateZone extends IPSModuleStrict
         $this->RegisterTimer("HeaterDefectTimer", 0, 'SCZ_TriggerHeaterDefectAlarm($_IPS[\'TARGET\']);');
 
         // Dynamic Variables based on Toggles (created in ApplyChanges)
-        
-        $this->DR_Register('DevicesThermostat');
     }
 
     public function Destroy(): void
@@ -87,6 +85,7 @@ class SmartClimateZone extends IPSModuleStrict
         if ($sensorID <= 0) {
             $this->SetStatus(104);
             return;
+        $this->DR_Register('DevicesThermostat');
         }
 
         // Clean up references and messages

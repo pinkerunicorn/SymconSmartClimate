@@ -5,8 +5,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/../libs/Trait_SmartLog.php';
 require_once __DIR__ . '/../libs/Trait_DeviceRegistration.php';
 
+require_once __DIR__ . '/../libs/Trait_DeviceAvailability.php';
+
 class SmartWaterMonitor extends IPSModuleStrict
 {
+    use DeviceAvailability_Trait;
     use SmartLog_Trait;
     use DeviceRegistration_Trait;
 
@@ -14,6 +17,7 @@ class SmartWaterMonitor extends IPSModuleStrict
     {
         // Never delete this line!
         parent::Create();
+        $this->DA_RegisterAvailability(900);
 
         // Properties
         $this->RegisterPropertyString('MQTTBaseTopic', 'watermeter');
@@ -145,8 +149,6 @@ class SmartWaterMonitor extends IPSModuleStrict
         // Timer for Leak Detection
         $this->RegisterTimer('LeakTimer', 0, 'WATER_LeakTimerTriggered($_IPS[\'TARGET\']);');
         $this->RegisterTimer('CostUpdateTimer', 15 * 60 * 1000, 'WATER_UpdateCosts($_IPS[\'TARGET\']);');
-
-        $this->DR_Register('DevicesGenericSensor');
     }
 
     public function Destroy(): void
@@ -159,10 +161,13 @@ class SmartWaterMonitor extends IPSModuleStrict
     {
         // Never delete this line!
         parent::ApplyChanges();
+        $this->DA_ApplyPresentation();
+        $this->DA_SetAvailable(true);
         $topic = $this->ReadPropertyString('MQTTBaseTopic');
         if ($topic == '') {
             $this->SetStatus(104);
             return;
+        $this->DR_Register('DevicesGenericSensor');
         }
 
         // Register MQTT Filter

@@ -200,8 +200,6 @@ class SmartLawnAI extends IPSModuleStrict {
         // NEU: Gemini Retry Timer
         $this->RegisterTimer('GeminiRetryTimer', 0, 'SLAI_ProcessGeminiRetry($_IPS[\'TARGET\']);');
         $this->RegisterTimer('ResetForceStart', 0, 'SLAI_ResetForceStart($_IPS[\'TARGET\']);');
-        
-        $this->DR_Register('DevicesGenericSensor');
     }
 
     public function Destroy(): void
@@ -266,6 +264,7 @@ class SmartLawnAI extends IPSModuleStrict {
         foreach ($this->GetMessageList() as $senderID => $messages) {
             foreach ($messages as $message) {
                 $this->UnregisterMessage($senderID, $message);
+        $this->DR_Register('DevicesGenericSensor');
             }
         }
         $sensorID = $this->ReadPropertyInteger('GlobalAirTempID');

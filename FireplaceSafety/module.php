@@ -150,8 +150,6 @@ class FireplaceSafety extends IPSModuleStrict
 
         // --- Timers ---
         $this->RegisterTimer("DoorAlarmTimer", 0, 'FS_TriggerDoorAlarm($_IPS[\'TARGET\']);');
-
-        $this->DR_Register('DevicesGenericSensor');
     }
 
     public function Destroy(): void
@@ -166,6 +164,7 @@ class FireplaceSafety extends IPSModuleStrict
         if ($sensorID <= 0) {
             $this->SetStatus(104);
             return;
+        $this->DR_Register('DevicesGenericSensor');
         }
 
         

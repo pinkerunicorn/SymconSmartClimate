@@ -8,6 +8,7 @@ require_once __DIR__ . '/libs/Trait_Logic.php';
 require_once __DIR__ . '/libs/Trait_Helpers.php';
 require_once __DIR__ . '/../libs/Trait_CentralStateAware.php';
 require_once __DIR__ . '/../libs/Trait_SmartLog.php';
+require_once __DIR__ . '/../libs/Trait_DeviceRegistration.php';
 
 class SmartLawnAI extends IPSModuleStrict {
     use SmartLog_Trait;
@@ -16,6 +17,7 @@ class SmartLawnAI extends IPSModuleStrict {
     use SmartLawnAI_Logic;
     use SmartLawnAI_Helpers;
     use CentralStateAware_Trait;
+    use DeviceRegistration_Trait;
 
     public function Create(): void {
         parent::Create();
@@ -199,6 +201,13 @@ class SmartLawnAI extends IPSModuleStrict {
         $this->RegisterTimer('GeminiRetryTimer', 0, 'SLAI_ProcessGeminiRetry($_IPS[\'TARGET\']);');
         $this->RegisterTimer('ResetForceStart', 0, 'SLAI_ResetForceStart($_IPS[\'TARGET\']);');
         
+        $this->DR_Register('DevicesGenericSensor');
+    }
+
+    public function Destroy(): void
+    {
+        parent::Destroy();
+        $this->DR_Unregister();
     }
 
     public function RequestAction(string $Ident, mixed $Value): void {

@@ -3,10 +3,13 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/Trait_SmartLog.php';
+require_once __DIR__ . '/../libs/Trait_DeviceRegistration.php';
 
 class SmartWaterMonitor extends IPSModuleStrict
 {
     use SmartLog_Trait;
+    use DeviceRegistration_Trait;
+
     public function Create(): void
     {
         // Never delete this line!
@@ -142,6 +145,14 @@ class SmartWaterMonitor extends IPSModuleStrict
         // Timer for Leak Detection
         $this->RegisterTimer('LeakTimer', 0, 'WATER_LeakTimerTriggered($_IPS[\'TARGET\']);');
         $this->RegisterTimer('CostUpdateTimer', 15 * 60 * 1000, 'WATER_UpdateCosts($_IPS[\'TARGET\']);');
+
+        $this->DR_Register('DevicesGenericSensor');
+    }
+
+    public function Destroy(): void
+    {
+        parent::Destroy();
+        $this->DR_Unregister();
     }
 
     public function ApplyChanges(): void

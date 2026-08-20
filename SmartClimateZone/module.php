@@ -18,7 +18,7 @@ class SmartClimateZone extends IPSModuleStrict
         $this->RegisterPropertyBoolean("ForceVentilationOnBadAir", false);
         $this->RegisterPropertyBoolean("EnableFreeCooling", false);
         $this->RegisterPropertyInteger("RegistryID", 0);
-        $this->RegisterPropertyInteger("SmartInventoryID", 0);
+        $this->RegisterPropertyInteger("RegistryID", 0);
         
         $this->RegisterPropertyFloat("TargetCoolingTemp", 23.0);
         $this->RegisterPropertyFloat("MoldWarningThreshold", 60.0);
@@ -89,10 +89,10 @@ class SmartClimateZone extends IPSModuleStrict
         }
         $this->UnregisterAllMessages();
 
-        $this->RegisterReference($this->ReadPropertyInteger('SmartInventoryID'));
+        $this->RegisterReference($this->ReadPropertyInteger('RegistryID'));
         
         // Cache devices for registry
-        $regId = (int)$this->ReadPropertyInteger('SmartInventoryID');
+        $regId = (int)$this->ReadPropertyInteger('RegistryID');
         $socketMap = [];
         if ($regId > 0 && @IPS_InstanceExists($regId)) {
             $sockets = json_decode(@SINV_GetByCategory($regId, 'actor:switch'), true) ?: [];
@@ -789,7 +789,7 @@ class SmartClimateZone extends IPSModuleStrict
     }
 
     public function GetConfigurationForm(): string {
-        $regId = (int)$this->ReadPropertyInteger('SmartInventoryID');
+        $regId = (int)$this->ReadPropertyInteger('RegistryID');
         
         $elements = [];
         

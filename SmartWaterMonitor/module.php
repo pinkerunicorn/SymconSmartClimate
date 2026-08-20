@@ -3,15 +3,12 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/Trait_SmartLog.php';
-require_once __DIR__ . '/../libs/Trait_DeviceRegistration.php';
-
 require_once __DIR__ . '/../libs/Trait_DeviceAvailability.php';
 
 class SmartWaterMonitor extends IPSModuleStrict
 {
     use DeviceAvailability_Trait;
     use SmartLog_Trait;
-    use DeviceRegistration_Trait;
 
     public function Create(): void
     {
@@ -164,7 +161,7 @@ class SmartWaterMonitor extends IPSModuleStrict
     public function Destroy(): void
     {
         parent::Destroy();
-        $this->DR_Unregister();
+
     }
 
     public function ApplyChanges(): void
@@ -177,7 +174,7 @@ class SmartWaterMonitor extends IPSModuleStrict
         if ($topic == '') {
             $this->SetStatus(104);
             return;
-        $this->DR_Register('DevicesGenericSensor');
+
         }
 
         // Register MQTT Filter

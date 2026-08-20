@@ -94,33 +94,29 @@ class SmartClimateZone extends IPSModuleStrict
         }
         $this->UnregisterAllMessages();
 
-        $this->RegisterReference($this->ReadPropertyInteger('RegistryID'));
+        $this->RegisterReference($this->ReadPropertyInteger('SmartInventoryID'));
         
         // Cache devices for registry
-        $regId = $this->ReadPropertyInteger('RegistryID');
+        $regId = (int)$this->ReadPropertyInteger('SmartInventoryID');
         $socketMap = [];
         if ($regId > 0 && @IPS_InstanceExists($regId)) {
-            $sockets = @SDR_GetDevicesByType($regId, 'DevicesSocket');
-            if (is_array($sockets)) {
-                foreach ($sockets as $s) {
-                    $key = ($s['room'] ?? '') . '::' . ($s['name'] ?? 'Unbenannt');
-                    $socketMap[$key] = $s['OnOff_VarID'] ?? 0;
-                    if (isset($s['Power_VarID'])) {
-                        $socketMap[$key . '::Power'] = $s['Power_VarID'];
-                    }
-                }
+            $sockets = json_decode(@SINV_GetByCategory($regId, 'actor:switch'), true) ?: [];
+            foreach ($sockets as $s) {
+                // To keep backward compatibility we only consider sockets, though actor:switch might have more.
+                // Assuming any actor:switch can act as a socket here.
+                $key = ($s['room'] ?? '') . '::' . ($s['name'] ?? 'Unbenannt');
+                $socketMap[$key] = (int)($s['varID'] ?? 0);
+                // SmartInventory doesn't return Power_VarID natively in the same entry yet
             }
         }
         $this->SetBuffer('SocketMapCache', json_encode($socketMap));
         
         $contactMap = [];
         if ($regId > 0 && @IPS_InstanceExists($regId)) {
-            $contacts = @SDR_GetDevicesByType($regId, 'DevicesContactSensor');
-            if (is_array($contacts)) {
-                foreach ($contacts as $c) {
-                    $key = ($c['room'] ?? '') . '::' . ($c['name'] ?? 'Unbenannt');
-                    $contactMap[$key] = $c['Status_VarID'] ?? 0;
-                }
+            $contacts = json_decode(@SINV_GetByCategory($regId, 'contact'), true) ?: [];
+            foreach ($contacts as $c) {
+                $key = ($c['room'] ?? '') . '::' . ($c['name'] ?? 'Unbenannt');
+                $contactMap[$key] = (int)($c['varID'] ?? 0);
             }
         }
         $this->SetBuffer('ContactMapCache', json_encode($contactMap));
@@ -222,12 +218,11 @@ class SmartClimateZone extends IPSModuleStrict
     {
         $options = [['label' => '(Manuell per Variable)', 'value' => "0"]];
         if ($regId <= 0 || !@IPS_InstanceExists($regId)) return $options;
-        $devices = @SDR_GetDevicesByType($regId, 'DevicesSocket');
-        if (!is_array($devices)) return $options;
+        $devices = json_decode(@SINV_GetByCategory($regId, 'actor:switch'), true) ?: [];
         $dynamicOptions = [];
         foreach ($devices as $dev) {
             $name = ($dev['room'] ?? '') . ' / ' . ($dev['name'] ?? 'Unbenannt');
-            $varId = (int)($dev['OnOff_VarID'] ?? 0);
+            $varId = (int)($dev['varID'] ?? 0);
             $deviceKey = ($dev['room'] ?? '') . '::' . ($dev['name'] ?? 'Unbenannt');
             if ($varId > 0) {
                 $dynamicOptions[] = ['label' => $name, 'value' => $deviceKey];
@@ -237,16 +232,15 @@ class SmartClimateZone extends IPSModuleStrict
         return array_merge($options, $dynamicOptions);
     }
 
-    private function getRegistryContactSensorOptions(int $regId): array
+    private function getRegistryContactOptions(int $regId): array
     {
-        $options = [['label' => '(Manuell per Variable)', 'value' => 0]];
+        $options = [['label' => '(Manuell per Variable)', 'value' => "0"]];
         if ($regId <= 0 || !@IPS_InstanceExists($regId)) return $options;
-        $devices = @SDR_GetDevicesByType($regId, 'DevicesContactSensor');
-        if (!is_array($devices)) return $options;
+        $devices = json_decode(@SINV_GetByCategory($regId, 'contact'), true) ?: [];
         $dynamicOptions = [];
         foreach ($devices as $dev) {
             $name = ($dev['room'] ?? '') . ' / ' . ($dev['name'] ?? 'Unbenannt');
-            $varId = (int)($dev['Status_VarID'] ?? 0);
+            $varId = (int)($dev['varID'] ?? 0);
             $deviceKey = ($dev['room'] ?? '') . '::' . ($dev['name'] ?? 'Unbenannt');
             if ($varId > 0) {
                 $dynamicOptions[] = ['label' => $name, 'value' => $deviceKey];
@@ -800,7 +794,7 @@ class SmartClimateZone extends IPSModuleStrict
     }
 
     public function GetConfigurationForm(): string {
-        $regId = $this->ReadPropertyInteger('RegistryID');
+        $regId = (int)$this->ReadPropertyInteger('SmartInventoryID');
         
         $elements = [];
         

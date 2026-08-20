@@ -98,7 +98,7 @@ class SmartClimateZone extends IPSModuleStrict
             foreach ($sockets as $s) {
                 // To keep backward compatibility we only consider sockets, though actor:switch might have more.
                 // Assuming any actor:switch can act as a socket here.
-                $key = ($s['room'] ?? '') . '::' . ($s['name'] ?? 'Unbenannt');
+                $key = ($s['room'] ?? '') . '::' . ($s['instanceName'] ?? 'Unbenannt');
                 $socketMap[$key] = (int)($s['varID'] ?? 0);
                 // SmartInventory doesn't return Power_VarID natively in the same entry yet
             }
@@ -109,7 +109,7 @@ class SmartClimateZone extends IPSModuleStrict
         if ($regId > 0 && @IPS_InstanceExists($regId)) {
             $contacts = json_decode(@SINV_GetByCategory($regId, 'contact'), true) ?: [];
             foreach ($contacts as $c) {
-                $key = ($c['room'] ?? '') . '::' . ($c['name'] ?? 'Unbenannt');
+                $key = ($c['room'] ?? '') . '::' . ($c['instanceName'] ?? 'Unbenannt');
                 $contactMap[$key] = (int)($c['varID'] ?? 0);
             }
         }
@@ -215,9 +215,9 @@ class SmartClimateZone extends IPSModuleStrict
         $devices = json_decode(@SINV_GetByCategory($regId, 'actor:switch'), true) ?: [];
         $dynamicOptions = [];
         foreach ($devices as $dev) {
-            $name = ($dev['room'] ?? '') . ' / ' . ($dev['name'] ?? 'Unbenannt');
+            $name = ($dev['room'] ?? '') . ' / ' . ($dev['instanceName'] ?? 'Unbenannt');
             $varId = (int)($dev['varID'] ?? 0);
-            $deviceKey = ($dev['room'] ?? '') . '::' . ($dev['name'] ?? 'Unbenannt');
+            $deviceKey = ($dev['room'] ?? '') . '::' . ($dev['instanceName'] ?? 'Unbenannt');
             if ($varId > 0) {
                 $dynamicOptions[] = ['label' => $name, 'value' => $deviceKey];
             }
@@ -233,9 +233,9 @@ class SmartClimateZone extends IPSModuleStrict
         $devices = json_decode(@SINV_GetByCategory($regId, 'contact'), true) ?: [];
         $dynamicOptions = [];
         foreach ($devices as $dev) {
-            $name = ($dev['room'] ?? '') . ' / ' . ($dev['name'] ?? 'Unbenannt');
+            $name = ($dev['room'] ?? '') . ' / ' . ($dev['instanceName'] ?? 'Unbenannt');
             $varId = (int)($dev['varID'] ?? 0);
-            $deviceKey = ($dev['room'] ?? '') . '::' . ($dev['name'] ?? 'Unbenannt');
+            $deviceKey = ($dev['room'] ?? '') . '::' . ($dev['instanceName'] ?? 'Unbenannt');
             if ($varId > 0) {
                 $dynamicOptions[] = ['label' => $name, 'value' => $deviceKey];
             }

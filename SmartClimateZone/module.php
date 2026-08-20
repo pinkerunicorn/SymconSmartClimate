@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/Trait_SmartLog.php';
 require_once __DIR__ . '/../libs/Trait_ClimateCommon.php';
-require_once __DIR__ . '/../libs/Trait_DeviceRegistration.php';
-
 class SmartClimateZone extends IPSModuleStrict
 {
     use SmartLog_Trait;
     use ClimateCommon_Trait;
-    use DeviceRegistration_Trait;
-
     public function Create(): void{
         parent::Create();
 
@@ -75,8 +71,7 @@ class SmartClimateZone extends IPSModuleStrict
     public function Destroy(): void
     {
         parent::Destroy();
-        $this->DR_Unregister();
-    }
+        }
 
     public function ApplyChanges(): void{
         parent::ApplyChanges();
@@ -85,7 +80,6 @@ class SmartClimateZone extends IPSModuleStrict
         if ($sensorID <= 0) {
             $this->SetStatus(104);
             return;
-        $this->DR_Register('DevicesThermostat');
         }
 
         // Clean up references and messages

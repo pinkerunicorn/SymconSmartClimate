@@ -8,8 +8,6 @@ require_once __DIR__ . '/libs/Trait_Logic.php';
 require_once __DIR__ . '/libs/Trait_Helpers.php';
 require_once __DIR__ . '/../libs/Trait_CentralStateAware.php';
 require_once __DIR__ . '/../libs/Trait_SmartLog.php';
-require_once __DIR__ . '/../libs/Trait_DeviceRegistration.php';
-
 class SmartLawnAI extends IPSModuleStrict {
     use SmartLog_Trait;
     use SmartLawnAI_Weather;
@@ -17,8 +15,6 @@ class SmartLawnAI extends IPSModuleStrict {
     use SmartLawnAI_Logic;
     use SmartLawnAI_Helpers;
     use CentralStateAware_Trait;
-    use DeviceRegistration_Trait;
-
     public function Create(): void {
         parent::Create();
 
@@ -205,8 +201,7 @@ class SmartLawnAI extends IPSModuleStrict {
     public function Destroy(): void
     {
         parent::Destroy();
-        $this->DR_Unregister();
-    }
+        }
 
     public function RequestAction(string $Ident, mixed $Value): void {
         if (in_array($Ident, ['DefaultZielFeuchte', 'DefaultStartSchwellwert', 'GlobalMaxDuration'])) {
@@ -264,8 +259,7 @@ class SmartLawnAI extends IPSModuleStrict {
         foreach ($this->GetMessageList() as $senderID => $messages) {
             foreach ($messages as $message) {
                 $this->UnregisterMessage($senderID, $message);
-        $this->DR_Register('DevicesGenericSensor');
-            }
+        }
         }
         $sensorID = $this->ReadPropertyInteger('GlobalAirTempID');
         if ($sensorID <= 0) {

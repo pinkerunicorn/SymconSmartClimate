@@ -18,6 +18,7 @@ class SmartClimateZone extends IPSModuleStrict
         $this->RegisterPropertyBoolean("ForceVentilationOnBadAir", false);
         $this->RegisterPropertyBoolean("EnableFreeCooling", false);
         $this->RegisterPropertyInteger("RegistryID", 0);
+        $this->RegisterPropertyInteger("SmartInventoryID", 0);
         
         $this->RegisterPropertyFloat("TargetCoolingTemp", 23.0);
         $this->RegisterPropertyFloat("MoldWarningThreshold", 60.0);
